@@ -73,7 +73,7 @@ func (c *ContentStream) Children() []Obj {
 	return []Obj{}
 }
 func (c *ContentStream) Encode(w io.Writer) (int, error) {
-	if c.buf.Len() > 1<<32 {
+	if c.buf.Len() > 1024 {
 		c.Filter = FILTER_FLATE
 	}
 	var n int

@@ -70,10 +70,9 @@ func ShapedGlyphAdv(r1, r2 rune, f *Font) (int, int) {
 }
 
 func FontBBox(font *sfnt.Font, buf *sfnt.Buffer) (fixed.Rectangle26_6, error) {
-	ppem := fixed.Int26_6(font.UnitsPerEm())
 	bbox := *new(fixed.Rectangle26_6)
 	for i := sfnt.GlyphIndex(0); i < sfnt.GlyphIndex(font.NumGlyphs()); i++ {
-		bounds, _, err := font.GlyphBounds(buf, i, ppem, 0)
+		bounds, _, err := font.GlyphBounds(buf, i, 1000, 0)
 		if err != nil {
 			return *new(fixed.Rectangle26_6), err
 		}

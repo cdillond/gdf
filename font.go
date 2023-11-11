@@ -25,8 +25,7 @@ type Font struct {
 	enc       *encoding.Encoder
 	source    *ResourceStream
 	buf       *sfnt.Buffer
-	path      string // the path of the font source file
-	subset    bool   // whether the font represents a subset
+	subset    bool // whether the font represents a subset
 }
 
 func (f *Font) SetFilter(filter Filter) {
@@ -57,7 +56,7 @@ func LoadTrueTypeBytes(b []byte, flag FontFlag, encoding Encoding) (Font, error)
 		out.source.buf.Write(b)
 		flag ^= NO_SUBSET
 	}
-	bf, err := fnt.Name(nil, sfnt.NameIDPostScript)
+	bf, err := fnt.Name(out.buf, sfnt.NameIDPostScript)
 	if err != nil {
 		return *new(Font), err
 	}
@@ -75,41 +74,7 @@ func LoadTrueTypeFont(path string, flag FontFlag, encoding Encoding) (Font, erro
 	if err != nil {
 		return *new(Font), err
 	}
-	fnt, err := sfnt.Parse(b)
-	if err != nil {
-		return *new(Font), err
-	}
-
-	out := Font{
-		Type:     Name("Font"),
-		Subtype:  Name("TrueType"),
-		Encoding: Name(toNameString(encoding)),
-		charset:  make(map[rune]int),
-		enc:      toEncoder(encoding),
-		source: &ResourceStream{
-			buf:    new(bytes.Buffer),
-			Filter: FILTER_FLATE,
-		},
-		buf:    new(sfnt.Buffer),
-		path:   path,
-		subset: true,
-	}
-	if flag&NO_SUBSET != 0 {
-		out.subset = false
-		out.source.buf.Write(b)
-		flag ^= NO_SUBSET // so that it doesn't mess with pdf readers
-	}
-	bf, err := fnt.Name(nil, sfnt.NameIDPostScript)
-	if err != nil {
-		return *new(Font), err
-	}
-	out.BaseFont = Name(bf)
-	fd := NewSimpleFD(fnt, flag, out.buf)
-	fd.FontFile2 = out.source
-	fd.FontName = Name(bf)
-	out.SimpleFD = fd
-	out.Font = fnt
-	return out, nil
+	return LoadTrueTypeBytes(b, flag, encoding)
 }
 
 type SimpleFD struct {
