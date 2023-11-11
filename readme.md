@@ -3,7 +3,7 @@ PDF 2.0 specification and implements a relatively low-level API on which higher-
 be built.
 
 gdf should be sufficient for most basic English-language PDF use cases. It avoids complexity
-by purposefully ignoring some of aspects of the PDF specification. These omissions may be
+by purposefully ignoring some aspects of the PDF specification. These omissions may be
 critical if you need accessibility features or support for multiple languages.
 
 Understanding the PDF coordinate system can go a long way to simplifying the use of this package.

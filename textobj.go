@@ -44,7 +44,7 @@ func (c *ContentStream) UnscaledTextExtentPts(s string) float64 {
 func (c *ContentStream) Tm(m Matrix) {
 	c.TextObj.Matrix = m
 	c.TextObj.LineMatrix = m
-	fmt.Fprintf(c.buf, "%f %f %f %f %f %f Tm\n", m.a, m.b, m.c, m.d, m.e, m.f)
+	fmt.Fprintf(c.buf, "%f %f %f %f %f %f Tm\n", m.A, m.B, m.C, m.D, m.E, m.F)
 }
 
 // Offsets the current text object's text matrix by x and y, and sets the text object's line matrix equal to its text matrix.

@@ -3,29 +3,29 @@ package gdf
 import "math"
 
 type Matrix struct {
-	a float64 // X scale
-	b float64 // X shear
-	c float64 // Y shear
-	d float64 // Y scale
-	e float64 // X offset
-	f float64 // Y offset
+	A float64 // X scale
+	B float64 // X shear
+	C float64 // Y shear
+	D float64 // Y scale
+	E float64 // X offset
+	F float64 // Y offset
 }
 
 // Empty/unitialized transformation matrices can result in undefined behavior.
 func (m *Matrix) IsEmpty() bool {
-	return m.a == 0 && m.a == m.b && m.b == m.c && m.c == m.d && m.d == m.e && m.e == m.f
+	return m.A == 0 && m.A == m.B && m.B == m.C && m.C == m.D && m.D == m.E && m.E == m.F
 }
 func (m *Matrix) SetIdentity() {
-	m.a = 1
-	m.b = 0
-	m.c = 0
-	m.d = 1
-	m.e = 0
-	m.f = 0
+	m.A = 1
+	m.B = 0
+	m.C = 0
+	m.D = 1
+	m.E = 0
+	m.F = 0
 }
 func NewMatrix() Matrix { return Matrix{1, 0, 0, 1, 0, 0} }
 
-func SetMatrix(a, b, c, d, e, f float64) Matrix { return Matrix{a, b, c, d, e, f} }
+func SetMatrix(a, b, c, d, e, f float64) Matrix { return Matrix{A: a, B: b, C: c, D: d, E: e, F: f} }
 
 // order of operations: translate, rotate, scale or skew
 
@@ -72,8 +72,8 @@ type Point struct {
 // implicitly [X Y 1] * [[a b 0][c d 0][e f 1]]
 func Transform(p Point, m Matrix) Point {
 	return Point{
-		X: p.X*m.a + p.Y*m.c + m.e,
-		Y: p.X*m.b + p.Y*m.d + m.f,
+		X: p.X*m.A + p.Y*m.C + m.E,
+		Y: p.X*m.B + p.Y*m.D + m.F,
 	}
 }
 
@@ -87,20 +87,20 @@ func TransformRect(r Rect, m Matrix) (Point, Point, Point, Point) {
 }
 
 func Mul(m1, m2 Matrix) Matrix {
-	C00 := m1.a*m2.a + m1.b*m2.c + 0*m2.e
-	C01 := m1.a*m2.b + m1.b*m2.d + 0*m2.f
+	C00 := m1.A*m2.A + m1.B*m2.C + 0*m2.E
+	C01 := m1.A*m2.B + m1.B*m2.D + 0*m2.F
 	//C02 := tm1.a*0 + tm1.b*0 + 0 * 1 = 0
 
-	C10 := m1.c*m2.a + m1.d*m2.c + 0*m2.e
-	C11 := m1.c*m2.b + m1.d*m2.d + 0*m2.f
+	C10 := m1.C*m2.A + m1.D*m2.C + 0*m2.E
+	C11 := m1.C*m2.B + m1.D*m2.D + 0*m2.F
 	//C12 := tm1.c*0 + tm1.d*0 + 0*1 = 0
 
-	C20 := m1.e*m2.a + m1.f*m2.c + 1*m2.e
-	C21 := m1.e*m2.b + m1.f*m2.d + 1*m2.f
+	C20 := m1.E*m2.A + m1.F*m2.C + 1*m2.E
+	C21 := m1.E*m2.B + m1.F*m2.D + 1*m2.F
 	//C22 := tm1.e*0 + tm1.f*0 + 1*1 = 1
-	return Matrix{a: C00, b: C01, c: C10, d: C11, e: C20, f: C21}
+	return Matrix{A: C00, B: C01, C: C10, D: C11, E: C20, F: C21}
 }
 
 func (m Matrix) All() [6]float64 {
-	return [6]float64{m.a, m.b, m.c, m.d, m.e, m.f}
+	return [6]float64{m.A, m.B, m.C, m.D, m.E, m.F}
 }

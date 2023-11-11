@@ -93,7 +93,7 @@ func (c *ContentStream) Q() error {
 // Concatenate t to the CTM
 func (c *ContentStream) Cm(m Matrix) {
 	c.GS.Matrix = Mul(c.GS.Matrix, m)
-	fmt.Fprintf(c.buf, "%f %f %f %f %f %f cm\n", m.a, m.b, m.c, m.d, m.e, m.f)
+	fmt.Fprintf(c.buf, "%f %f %f %f %f %f cm\n", m.A, m.B, m.C, m.D, m.E, m.F)
 }
 
 // Set linewidth to f
