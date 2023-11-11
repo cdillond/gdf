@@ -64,9 +64,9 @@ func ReplacePage(pdf *PDF, page *Page, i int) error {
 // form space (for form XObjects)
 // pattern space (patern matrix)
 
-func (p *Page) SetRef(i int) { p.refnum = i }
-func (p *Page) RefNum() int  { return p.refnum }
-func (p *Page) Children() []Obj {
+func (p *Page) setRef(i int) { p.refnum = i }
+func (p *Page) refNum() int  { return p.refnum }
+func (p *Page) children() []Obj {
 	out := make([]Obj, 0, len(p.ResourceDict.Fonts)+len(p.Content)) //+len(p.ResourceDict.XObject))
 	for i := range p.ResourceDict.Fonts {
 		out = append(out, p.ResourceDict.Fonts[i])
@@ -84,7 +84,7 @@ func (p *Page) Children() []Obj {
 	return out
 }
 
-func (p *Page) Encode(w io.Writer) (int, error) {
+func (p *Page) encode(w io.Writer) (int, error) {
 	return fmt.Fprintf(w, "<<\n/Type /Page\n/Parent 2 0 R\n/MediaBox [%f %f %f %f]\n/CropBox [%f %f %f %f]\n/Contents %d 0 R\n/Resources %s>>\n",
 		p.MediaBox.LLX, p.MediaBox.LLY, p.MediaBox.URX, p.MediaBox.URY, p.CropBox.LLX, p.CropBox.LLY, p.CropBox.URX, p.CropBox.URY, p.Content[0].RefNum(), p.ResourceDict.String())
 }

@@ -14,10 +14,10 @@ type ResourceStream struct {
 	refnum int
 }
 
-func (r *ResourceStream) SetRef(i int)    { r.refnum = i }
-func (r *ResourceStream) RefNum() int     { return r.refnum }
-func (r *ResourceStream) Children() []Obj { return []Obj{} }
-func (r *ResourceStream) Encode(w io.Writer) (int, error) {
+func (r *ResourceStream) setRef(i int)    { r.refnum = i }
+func (r *ResourceStream) refNum() int     { return r.refnum }
+func (r *ResourceStream) children() []Obj { return []Obj{} }
+func (r *ResourceStream) encode(w io.Writer) (int, error) {
 	var n int
 	switch r.Filter {
 	case FILTER_FLATE:
@@ -69,7 +69,7 @@ func (r ResourceDict) String() string {
 	if len(r.ExtGState) > 0 {
 		bldr.WriteString("/ExtGState <<\n")
 		for i, e := range r.ExtGState {
-			fmt.Fprintf(bldr, "/GS%d %d 0 R\n", i, e.RefNum())
+			fmt.Fprintf(bldr, "/GS%d %d 0 R\n", i, e.refNum())
 		}
 		bldr.WriteString(">>\n")
 	}

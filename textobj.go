@@ -10,12 +10,12 @@ type TextObj struct {
 	LineMatrix Matrix
 }
 
-// returns the x an y coordinates of the cursor relative to the text object's coordinate space
+// Returns the x and y coordinates of the point (0,0,1) transformed only by the current text matrix.
 func (c *ContentStream) RawTextCursor() Point {
 	return Transform(Point{0, 0}, c.TextObj.Matrix)
 }
 
-// returns the x and y coordinates of the text cursor relative to the content stream's coordinate space
+// Returns the x and y coordinates of the point (0,0,1) transformed by the current text matrix and the current transformation matrix.
 func (c *ContentStream) TextCursor() Point {
 	p := Transform(Point{0, 0}, c.TextObj.Matrix)
 	return Transform(p, c.GS.Matrix)
@@ -40,21 +40,21 @@ func (c *ContentStream) UnscaledTextExtentPts(s string) float64 {
 	return FUToPt(extFU, c.FontSize)
 }
 
-// sets the current text object's text matrix and line matrix to m
+// Sets the current text object's text matrix and line matrix to m.
 func (c *ContentStream) Tm(m Matrix) {
 	c.TextObj.Matrix = m
 	c.TextObj.LineMatrix = m
 	fmt.Fprintf(c.buf, "%f %f %f %f %f %f Tm\n", m.a, m.b, m.c, m.d, m.e, m.f)
 }
 
-// offsets the current text object's text matrix by x and y, and sets the text object's line matrix equal to its text matrix
+// Offsets the current text object's text matrix by x and y, and sets the text object's line matrix equal to its text matrix.
 func (c *ContentStream) Td(x, y float64) {
 	c.TextObj.Matrix = Mul(c.TextObj.Matrix, Matrix{1, 0, 0, 1, x, y})
 	c.LineMatrix = c.TextObj.Matrix
 	fmt.Fprintf(c.buf, "%f %f Td\n", x, y)
 }
 
-// sets the content stream's current leading to y and then calls c.Td(x, y)
+// Sets the content stream's current leading to y and then calls c.Td(x, y).
 func (c *ContentStream) TD(x, y float64) {
 	c.TL(-y)
 	c.TextObj.Matrix = Mul(c.TextObj.Matrix, Matrix{1, 0, 0, 1, x, y})
@@ -62,14 +62,14 @@ func (c *ContentStream) TD(x, y float64) {
 	fmt.Fprintf(c.buf, "%f %f Td\n", x, y)
 }
 
-// sets the current text matrix and line matrix equal to the line matrix offset by (0, -c.Leading)
+// Sets the current text matrix and line matrix equal to the line matrix offset by (0, -c.Leading)
 func (c *ContentStream) TStar() {
 	c.TextObj.Matrix = Mul(c.LineMatrix, Matrix{1, 0, 0, 1, 0, -c.Leading})
 	c.LineMatrix = c.TextObj.Matrix
 	c.buf.Write([]byte("T*\n"))
 }
 
-// writes s and advances the text matrix by the extent of s
+// Writes s and advances the text matrix by the extent of s.
 func (c *ContentStream) Tj(s string) {
 	ext := c.TextExtentPts(s)
 	b, _ := c.Font.enc.Bytes([]byte(s))

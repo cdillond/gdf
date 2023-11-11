@@ -5,21 +5,21 @@ import (
 	"io"
 )
 
-func WriteHeader(p *PDF, w io.Writer) error {
+func writeHeader(p *PDF, w io.Writer) error {
 	n, err := w.Write([]byte("%PDF-2.0\n\x81\x81\x81\x81\n"))
 	p.n += n
 	return err
 }
 
-func WriteObjects(p *PDF, w io.Writer) error {
+func writeObjects(p *PDF, w io.Writer) error {
 	for _, obj := range p.objects {
 		p.xref = append(p.xref, p.n)
-		t, err := fmt.Fprintf(w, "%d 0 obj\n", obj.RefNum())
+		t, err := fmt.Fprintf(w, "%d 0 obj\n", obj.refNum())
 		p.n += t
 		if err != nil {
 			return err
 		}
-		t, err = obj.Encode(w)
+		t, err = obj.encode(w)
 		p.n += t
 		if err != nil {
 			return err
@@ -33,7 +33,7 @@ func WriteObjects(p *PDF, w io.Writer) error {
 	return nil
 }
 
-func WriteXref(p *PDF, w io.Writer) error {
+func writeXref(p *PDF, w io.Writer) error {
 	p.xref = append(p.xref, p.n) // adding the offset even though it won't be included yet
 	t, err := fmt.Fprintf(w, "xref\n0 %d\n", len(p.xref))
 	p.n += t
@@ -56,7 +56,7 @@ func WriteXref(p *PDF, w io.Writer) error {
 	return nil
 }
 
-func WriteTrailer(p *PDF, w io.Writer) error {
+func writeTrailer(p *PDF, w io.Writer) error {
 	_, err := w.Write([]byte("trailer\n"))
 	if err != nil {
 		return err

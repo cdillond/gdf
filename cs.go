@@ -64,15 +64,15 @@ func (c *ContentStream) ET() error {
 	return nil
 }
 
-func (c *ContentStream) SetRef(i int) { c.refnum = i }
-func (c *ContentStream) RefNum() int  { return c.refnum }
-func (c *ContentStream) Children() []Obj {
+func (c *ContentStream) setRef(i int) { c.refnum = i }
+func (c *ContentStream) refNum() int  { return c.refnum }
+func (c *ContentStream) children() []Obj {
 	if c.ExtGState.Dict != nil {
 		return []Obj{&c.ExtGState}
 	}
 	return []Obj{}
 }
-func (c *ContentStream) Encode(w io.Writer) (int, error) {
+func (c *ContentStream) encode(w io.Writer) (int, error) {
 	if c.buf.Len() > 1024 {
 		c.Filter = FILTER_FLATE
 	}
@@ -114,20 +114,6 @@ func (c *ContentStream) Encode(w io.Writer) (int, error) {
 	return n + t, nil
 }
 
-// Draw rectangle (start X, start Y, width, height)
-func (c *ContentStream) Re(x, y, w, h float64) {
-	c.PathState = PATH_BUILDING
-	c.CurPt = Point{x, y}
-	fmt.Fprintf(c.buf, "%f %f %f %f re\n", x, y, w, h)
-}
-func (c *ContentStream) Fill() {
-	switch c.PathState {
-	case PATH_BUILDING, PATH_CLIPPING:
-		c.buf.Write([]byte("f\n"))
-		c.PathState = PATH_NONE
-		c.CurPt = *new(Point)
-	}
-}
 func (c *ContentStream) SetRGB(r, g, b float64) {
 	fmt.Fprintf(c.buf, "%f %f %f rg\n", r, g, b)
 }

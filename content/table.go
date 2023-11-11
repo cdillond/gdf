@@ -69,24 +69,24 @@ func DrawTable(cs *gdf.ContentStream, t Table) error {
 		width += t.ColWidths[i]
 	}
 	cs.Re(start.X, start.Y-height, width, height)
-	cs.S()
+	cs.Stroke()
 	var curX, curY float64
 	cs.WSmall(2)
 	for i := 0; i < t.NR-1; i++ {
 		curY += t.RowHeights[i]
-		cs.MSmall(start.X, start.Y-curY)
-		cs.LSmall(start.X+width, start.Y-curY)
+		cs.MoveTo(start.X, start.Y-curY)
+		cs.LineTo(start.X+width, start.Y-curY)
 		if i == 1 {
 			cs.WSmall(1)
 		}
-		cs.S()
+		cs.Stroke()
 
 	}
 	for i := 0; i < t.NC-1; i++ {
 		curX += t.ColWidths[i]
-		cs.MSmall(start.X+curX, start.Y-height)
-		cs.LSmall(start.X+curX, start.Y)
-		cs.S()
+		cs.MoveTo(start.X+curX, start.Y-height)
+		cs.LineTo(start.X+curX, start.Y)
+		cs.Stroke()
 	}
 
 	return nil

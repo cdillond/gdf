@@ -11,9 +11,9 @@ const (
 )
 
 func Line(cs *gdf.ContentStream, start, end gdf.Point) {
-	cs.MSmall(start.X, start.Y)
-	cs.LSmall(end.X, end.Y)
-	cs.S()
+	cs.MoveTo(start.X, start.Y)
+	cs.LineTo(end.X, end.Y)
+	cs.Stroke()
 }
 
 // Draws text to a rectangle beginning at start, strokes the rectangle, and returns the height and width of the resulting untransformed
@@ -28,6 +28,6 @@ func TextBox(cs *gdf.ContentStream, text string, start gdf.Point, margins gdf.Ma
 	cs.Tj(text)
 	cs.ET()
 	cs.Re(start.X, start.Y-desc-margins.Bottom, ext, height)
-	cs.S()
+	cs.Stroke()
 	return height, ext
 }

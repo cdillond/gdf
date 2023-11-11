@@ -43,14 +43,14 @@ type Rect struct {
 func (r Rect) Height() float64 { return r.URY - r.LLY }
 func (r Rect) Width() float64  { return r.URX - r.LLX }
 
-// returns the length of a rectangle's diagonal
+// Returns the length of a rectangle's diagonal.
 func Diagonal(r Rect) float64 {
 	a := r.URX - r.LLX
 	b := r.URY - r.LLY
 	return math.Sqrt(a*a + b*b)
 }
 
-// returns the angle formed by the lower side of the rectangle and the lower-left to upper-right diagonal, and that angle's complement
+// Returns the angle, in radians, formed by the lower side of the rectangle and the lower-left to upper-right diagonal, and that angle's complement.
 func Angles(r Rect) (float64, float64) {
 	a := math.Atan((r.URY - r.LLY) / (r.URX - r.LLX))
 	return a, 90 - a

@@ -3,10 +3,10 @@ package gdf
 import "io"
 
 type Obj interface {
-	SetRef(i int)
-	RefNum() int
-	Children() []Obj
-	Encode(w io.Writer) (int, error)
+	setRef(i int)
+	refNum() int
+	children() []Obj
+	encode(w io.Writer) (int, error)
 }
 
 type Name string

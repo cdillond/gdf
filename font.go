@@ -25,7 +25,7 @@ type Font struct {
 	enc       *encoding.Encoder
 	source    *ResourceStream
 	buf       *sfnt.Buffer
-	subset    bool // whether the font represents a subset
+	noSubset  bool // whether the font represents a subset
 }
 
 func (f *Font) SetFilter(filter Filter) {
@@ -48,11 +48,10 @@ func LoadTrueTypeBytes(b []byte, flag FontFlag, encoding Encoding) (Font, error)
 			buf:    new(bytes.Buffer),
 			Filter: FILTER_FLATE,
 		},
-		buf:    new(sfnt.Buffer),
-		subset: true,
+		buf: new(sfnt.Buffer),
 	}
 	if flag&NO_SUBSET != 0 {
-		out.subset = false
+		out.noSubset = true
 		out.source.buf.Write(b)
 		flag ^= NO_SUBSET
 	}
@@ -153,13 +152,13 @@ func (f *Font) Encode(w io.Writer) (int, error) {
 		encstr = fmt.Sprintf("/Encoding %s\n", ToString(f.Encoding))
 	}
 	return fmt.Fprintf(w, "<<\n/Type %s\n/Subtype %s\n/BaseFont %s\n/FirstChar %d\n/LastChar %d\n/Widths %v\n%s/FontDescriptor %d 0 R\n>>\n",
-		ToString(f.Type), ToString(f.Subtype), ToString(f.BaseFont), f.FirstChar, f.LastChar, f.Widths, encstr, f.SimpleFD.RefNum())
+		ToString(f.Type), ToString(f.Subtype), ToString(f.BaseFont), f.FirstChar, f.LastChar, f.Widths, encstr, f.SimpleFD.refNum())
 }
 
-func (fd *SimpleFD) SetRef(i int)    { fd.refnum = i }
-func (fd *SimpleFD) RefNum() int     { return fd.refnum }
-func (fd *SimpleFD) Children() []Obj { return []Obj{} } // no need to include FontFile2
-func (fd *SimpleFD) Encode(w io.Writer) (int, error) {
+func (fd *SimpleFD) setRef(i int)    { fd.refnum = i }
+func (fd *SimpleFD) refNum() int     { return fd.refnum }
+func (fd *SimpleFD) children() []Obj { return []Obj{} } // no need to include FontFile2
+func (fd *SimpleFD) encode(w io.Writer) (int, error) {
 	return fmt.Fprintf(w, "<<\n/Type %s\n/FontName %s\n/Flags %d\n/FontBBox %v\n/ItalicAngle %d\n/Ascent %d\n/Descent %d\n/CapHeight %d\n/StemV %d\n/XHeight %d\n/FontFile2 %d 0 R\n>>\n",
-		ToString(fd.Type), ToString(fd.FontName), fd.Flags, fd.FontBBox, fd.ItalicAngle, fd.Ascent, fd.Descent, fd.CapHeight, fd.StemV, fd.XHeight, fd.FontFile2.RefNum())
+		ToString(fd.Type), ToString(fd.FontName), fd.Flags, fd.FontBBox, fd.ItalicAngle, fd.Ascent, fd.Descent, fd.CapHeight, fd.StemV, fd.XHeight, fd.FontFile2.refNum())
 }

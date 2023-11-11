@@ -18,48 +18,50 @@ func NewPDF() *PDF {
 	return pdf
 }
 
-func BuildPDFTree(pdf *PDF) {
-	IncludeObj(pdf, Obj((&pdf.catalog)))
-	IncludeChildren(pdf, Obj(&(pdf.catalog)))
+func buildPDFTree(pdf *PDF) {
+	includeObj(pdf, Obj((&pdf.catalog)))
+	includeChildren(pdf, Obj(&(pdf.catalog)))
 }
 
 func WritePDF(pdf *PDF, w io.Writer) error {
-	BuildPDFTree(pdf)
+	buildPDFTree(pdf)
 	// finalize fonts
 	for _, obj := range pdf.objects {
 		if fnt, ok := obj.(*Font); ok {
 			CalculateWidths(fnt)
-			err := fnt.Subset()
-			if err != nil {
-				log.Println(err.Error())
+			if !fnt.noSubset {
+				err := fnt.subset()
+				if err != nil {
+					log.Println(err.Error())
+				}
 			}
 		}
 	}
-	if err := WriteHeader(pdf, w); err != nil {
+	if err := writeHeader(pdf, w); err != nil {
 		return err
 	}
-	if err := WriteObjects(pdf, w); err != nil {
+	if err := writeObjects(pdf, w); err != nil {
 		return err
 	}
-	if err := WriteXref(pdf, w); err != nil {
+	if err := writeXref(pdf, w); err != nil {
 		return err
 	}
-	if err := WriteTrailer(pdf, w); err != nil {
+	if err := writeTrailer(pdf, w); err != nil {
 		return err
 	}
 	return nil
 }
 
-func IncludeObj(pdf *PDF, obj Obj) {
-	if obj.RefNum() == 0 { // has not been set yet
+func includeObj(pdf *PDF, obj Obj) {
+	if obj.refNum() == 0 { // has not been set yet
 		pdf.objects = append(pdf.objects, obj)
-		obj.SetRef(len(pdf.objects))
+		obj.setRef(len(pdf.objects))
 	}
 }
 
-func IncludeChildren(pdf *PDF, obj Obj) {
-	for _, child := range obj.Children() {
-		IncludeObj(pdf, child)
-		IncludeChildren(pdf, child)
+func includeChildren(pdf *PDF, obj Obj) {
+	for _, child := range obj.children() {
+		includeObj(pdf, child)
+		includeChildren(pdf, child)
 	}
 }

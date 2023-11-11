@@ -8,8 +8,9 @@ import (
 	cfnt "github.com/tdewolff/canvas/font"
 )
 
-func (f *Font) Subset() error {
-	if !f.subset {
+// Writes a TrueType font representing the subset of f defined by f's internal charset to f's internal source buffer.
+func (f *Font) subset() error {
+	if f.noSubset {
 		return nil
 	}
 	glyphs := make([]uint16, 0, len(f.charset))

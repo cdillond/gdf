@@ -28,31 +28,31 @@ const (
 	TR_ADD_PATH
 )
 
-// sets the character spacing
+// Sets the content stream's character spacing.
 func (c *ContentStream) Tc(f float64) {
 	c.CharSpace = f
 	fmt.Fprintf(c.buf, "%f Tc\n", f)
 }
 
-// sets the word spacing
+// Sets the content stream's word spacing.
 func (c *ContentStream) Tw(f float64) {
 	c.WordSpace = f
 	fmt.Fprintf(c.buf, "%f Tw\n", f)
 }
 
-// sets the scale
+// Sets the content stream's horizontal text scaling percentage. The default value is 100.0 percent.
 func (c *ContentStream) Tz(f float64) {
 	c.Scale = f
 	fmt.Fprintf(c.buf, "%f Tz\n", f)
 }
 
-// sets the leading
+// Sets the content stream's text leading (line height).
 func (c *ContentStream) TL(f float64) {
 	c.Leading = f
 	fmt.Fprintf(c.buf, "%f TL\n", f)
 }
 
-// sets the font and font size
+// Sets the current font size and font.
 func (c *ContentStream) Tf(size float64, font *Font) {
 	var i int
 	for ; i < len(c.Parent.Fonts); i++ {
@@ -68,13 +68,13 @@ func (c *ContentStream) Tf(size float64, font *Font) {
 	fmt.Fprintf(c.buf, "/F%d %f Tf\n", i, size)
 }
 
-// sets the text rendering mode
+// Sets the current text rendering mode.
 func (c *ContentStream) Tr(r RenderMode) {
 	c.RenderMode = r
 	fmt.Fprintf(c.buf, "%d Tr\n", r)
 }
 
-// sets the text rise
+// Sets the current text rise.
 func (c *ContentStream) Ts(f float64) {
 	c.Rise = f
 	fmt.Fprintf(c.buf, "%f Ts\n", f)

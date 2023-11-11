@@ -16,9 +16,9 @@ func NewExtGState() ExtGState {
 	}
 }
 
-func (e *ExtGState) SetRef(i int) { e.refnum = i }
-func (e *ExtGState) RefNum() int  { return e.refnum }
-func (e *ExtGState) Children() []Obj {
+func (e *ExtGState) setRef(i int) { e.refnum = i }
+func (e *ExtGState) refNum() int  { return e.refnum }
+func (e *ExtGState) children() []Obj {
 	out := []Obj{}
 	for _, val := range e.Dict {
 		if v, ok := val.(Obj); ok {
@@ -27,7 +27,7 @@ func (e *ExtGState) Children() []Obj {
 	}
 	return out
 }
-func (e *ExtGState) Encode(w io.Writer) (int, error) {
+func (e *ExtGState) encode(w io.Writer) (int, error) {
 	var n int
 	t, err := w.Write([]byte("<<\n/Type /ExtGState\n"))
 	if err != nil {

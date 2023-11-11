@@ -10,7 +10,7 @@ Understanding the PDF coordinate system can go a long way to simplifying the use
 
 Every item is drawn, according to its type, at the origin of its coordinate space. The
 coordinate space is then transformed by one or more affine matrices, always including the
-current rransformation matrix, and rendered onto the page's "user space." Text space is
+current transformation matrix, and rendered onto the page's "user space." Text space is
 transformed first by the current text matrix and then by the current transformation matrix.
 The PDF specification also mentions glyph space, image space, form space, and pattern space,
 but they are not relevant to this package in its present form.
@@ -23,8 +23,8 @@ in the default graphics space moves the cursor from (10, 10) to (10, 40) in
 user space if the Current Transformation Matrix is [1 0 0][2 0 0][0 0 1]; i.e.,
 if it scales the y-coordinates of the original space by 2.
 
-The default basic unit for a PDF document is the point, defined as 1/72 of an inch,
-but text can be measured in terms of both points and unscaled font units.
+The default basic unit for a PDF document is the point, defined as 1/72 of an inch.
+However, text can be measured in terms of both points and unscaled font units.
 The font size (in points) indicates the number of points per side of a glyph's em square. PDF fonts always
 contain 1000 font units per em square, so a conversion from font units to points can be
 obtained by calculating fontSize*numFontUnits/1000. The Tc (character spacing) and Tw (word spacing)
