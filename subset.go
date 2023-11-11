@@ -32,6 +32,10 @@ func (f *Font) subset() error {
 	//	return err
 	//}
 	f.m.Lock()
+	if f.c == nil {
+		f.m.Unlock()
+		return fmt.Errorf("susbetting error")
+	}
 	subfnt, _ := f.c.Subset(glyphs, cfnt.WritePDFTables)
 	f.m.Unlock()
 	sbuf := new(bytes.Buffer)
