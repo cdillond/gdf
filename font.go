@@ -5,14 +5,18 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"sync"
 
 	"golang.org/x/image/font/sfnt"
 	"golang.org/x/text/encoding"
+
+	cfnt "github.com/tdewolff/canvas/font" // for subsetting
 )
 
 type Font struct {
 	*sfnt.Font
 	*SimpleFD
+
 	refnum    int
 	Type      Name
 	Subtype   Name
@@ -25,20 +29,22 @@ type Font struct {
 	enc       *encoding.Encoder
 	source    *ResourceStream
 	buf       *sfnt.Buffer
-	noSubset  bool // whether the font represents a subset
+	noSubset  bool       // whether the font represents a subset
+	c         *cfnt.SFNT // to subset
+	m         sync.Mutex
 }
 
 func (f *Font) SetFilter(filter Filter) {
 	f.source.Filter = filter
 }
 
-func LoadTrueTypeBytes(b []byte, flag FontFlag, encoding Encoding) (Font, error) {
+func LoadTrueTypeBytes(b []byte, flag FontFlag, encoding Encoding) (*Font, error) {
 	fnt, err := sfnt.Parse(b)
 	if err != nil {
-		return *new(Font), err
+		return nil, err
 	}
 
-	out := Font{
+	out := &Font{
 		Type:     Name("Font"),
 		Subtype:  Name("TrueType"),
 		Encoding: Name(toNameString(encoding)),
@@ -54,10 +60,21 @@ func LoadTrueTypeBytes(b []byte, flag FontFlag, encoding Encoding) (Font, error)
 		out.noSubset = true
 		out.source.buf.Write(b)
 		flag ^= NO_SUBSET
+	} else {
+		go func() {
+			out.m.Lock()
+			defer out.m.Unlock()
+			bf, err := cfnt.ToSFNT(b)
+			if err != nil {
+				return
+			}
+			c, _ := cfnt.ParseSFNT(bf, 0)
+			out.c = c
+		}()
 	}
 	bf, err := fnt.Name(out.buf, sfnt.NameIDPostScript)
 	if err != nil {
-		return *new(Font), err
+		return nil, err
 	}
 	out.BaseFont = Name(bf)
 	fd := NewSimpleFD(fnt, flag, out.buf)
@@ -68,10 +85,10 @@ func LoadTrueTypeBytes(b []byte, flag FontFlag, encoding Encoding) (Font, error)
 	return out, nil
 }
 
-func LoadTrueTypeFont(path string, flag FontFlag, encoding Encoding) (Font, error) {
+func LoadTrueTypeFont(path string, flag FontFlag, encoding Encoding) (*Font, error) {
 	b, err := os.ReadFile(path)
 	if err != nil {
-		return *new(Font), err
+		return nil, err
 	}
 	return LoadTrueTypeBytes(b, flag, encoding)
 }
