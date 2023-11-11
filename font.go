@@ -141,12 +141,12 @@ const (
 	NO_SUBSET FontFlag = 1 << 19 // prevent gpdf from subsetting a font
 )
 
-func (f *Font) SetRef(i int) { f.refnum = i }
-func (f *Font) RefNum() int  { return f.refnum }
-func (f *Font) Children() []Obj {
+func (f *Font) setRef(i int) { f.refnum = i }
+func (f *Font) refNum() int  { return f.refnum }
+func (f *Font) children() []Obj {
 	return []Obj{f.SimpleFD, f.source}
 }
-func (f *Font) Encode(w io.Writer) (int, error) {
+func (f *Font) encode(w io.Writer) (int, error) {
 	var encstr string
 	if f.Encoding != Name("Symbolic") {
 		encstr = fmt.Sprintf("/Encoding %s\n", ToString(f.Encoding))

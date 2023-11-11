@@ -62,7 +62,7 @@ func (r ResourceDict) String() string {
 	if len(r.Fonts) > 0 {
 		bldr.WriteString("/Font <<\n")
 		for i, f := range r.Fonts {
-			fmt.Fprintf(bldr, "/F%d %d 0 R\n", i, f.RefNum())
+			fmt.Fprintf(bldr, "/F%d %d 0 R\n", i, f.refNum())
 		}
 		bldr.WriteString(">>\n")
 	}
