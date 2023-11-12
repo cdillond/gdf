@@ -56,7 +56,7 @@ func (c *ContentStream) Td(x, y float64) {
 
 // Sets the content stream's current leading to y and then calls c.Td(x, y).
 func (c *ContentStream) TD(x, y float64) {
-	c.TL(-y)
+	c.TLeading(-y)
 	c.TextObj.Matrix = Mul(c.TextObj.Matrix, Matrix{1, 0, 0, 1, x, y})
 	c.LineMatrix = c.TextObj.Matrix
 	fmt.Fprintf(c.buf, "%f %f Td\n", x, y)
@@ -109,7 +109,7 @@ func (c *ContentStream) TJSpace(run []rune, kerns []int, spaceAdj float64) error
 	}
 	var ext float64
 	if spaceAdj != 0 {
-		c.Tw(FUToPt(spaceAdj, c.FontSize))
+		c.TWordSpace(FUToPt(spaceAdj, c.FontSize))
 	}
 	c.buf.WriteByte('[')
 	tmp := []byte{}
@@ -131,7 +131,7 @@ func (c *ContentStream) TJSpace(run []rune, kerns []int, spaceAdj float64) error
 	ext += FUToPt(float64(-kerntotal), c.FontSize)
 	ext *= c.Scale / 100
 	if spaceAdj != 0 {
-		c.Tw(0)
+		c.TWordSpace(0)
 	}
 	c.TextObj.Matrix = Mul(c.TextObj.Matrix, Matrix{1, 0, 0, 1, ext, 0})
 	return nil

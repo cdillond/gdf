@@ -150,3 +150,23 @@ func (c *ContentStream) Re(x, y, w, h float64) {
 	c.CurPt = Point{x, y}
 	fmt.Fprintf(c.buf, "%f %f %f %f re\n", x, y, w, h)
 }
+
+// Clip path (non-zero winding).
+// A clipping path operator (W or W*, shown in "Table 60 — Clipping path operators") may appear after
+// the last path construction operator and before the path-painting operator that terminates a path object.
+func (c *ContentStream) W() {
+	switch c.PathState {
+	case PATH_BUILDING:
+		c.PathState = PATH_CLIPPING
+		c.buf.Write([]byte("W\n"))
+	}
+}
+
+// Clip path (even-odd).
+func (c *ContentStream) WStar() {
+	switch c.PathState {
+	case PATH_BUILDING:
+		c.PathState = PATH_CLIPPING
+		c.buf.Write([]byte("W*\n"))
+	}
+}

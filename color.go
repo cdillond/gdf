@@ -15,6 +15,7 @@ type Color interface {
 	color()
 }
 
+// Sets c's stroking color (SColor) to cl and sets its SColorSpace to cl's ColorSpace.
 func (c *ContentStream) SetColorStroke(cl Color) {
 	c.SColor = cl
 	switch v := cl.(type) {
@@ -29,6 +30,8 @@ func (c *ContentStream) SetColorStroke(cl Color) {
 		fmt.Fprintf(c.buf, "%f %f %f %f K\n", v.C, v.M, v.Y, v.K)
 	}
 }
+
+// Sets c's non-stroking color (NColor) to cl and sets its NColorSpace to cl's ColorSpace.
 func (c *ContentStream) SetColor(cl Color) {
 	c.NColor = cl
 	switch v := cl.(type) {

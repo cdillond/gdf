@@ -5,12 +5,9 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"sync"
 
 	"golang.org/x/image/font/sfnt"
 	"golang.org/x/text/encoding"
-
-	cfnt "github.com/tdewolff/canvas/font" // for subsetting
 )
 
 type Font struct {
@@ -29,9 +26,7 @@ type Font struct {
 	enc       *encoding.Encoder
 	source    *ResourceStream
 	buf       *sfnt.Buffer
-	noSubset  bool       // whether the font represents a subset
-	c         *cfnt.SFNT // to subset
-	m         sync.Mutex
+	noSubset  bool // whether the font represents a subset
 }
 
 func (f *Font) SetFilter(filter Filter) {
@@ -60,7 +55,7 @@ func LoadTrueTypeBytes(b []byte, flag FontFlag, encoding Encoding) (*Font, error
 		out.noSubset = true
 		out.source.buf.Write(b)
 		flag ^= NO_SUBSET
-	} else {
+	} /*else {/*
 		go func() {
 			out.m.Lock()
 			defer out.m.Unlock()
@@ -71,7 +66,7 @@ func LoadTrueTypeBytes(b []byte, flag FontFlag, encoding Encoding) (*Font, error
 			c, _ := cfnt.ParseSFNT(bf, 0)
 			out.c = c
 		}()
-	}
+	} */
 	bf, err := fnt.Name(out.buf, sfnt.NameIDPostScript)
 	if err != nil {
 		return nil, err

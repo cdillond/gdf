@@ -41,7 +41,7 @@ func DrawTable(cs *gdf.ContentStream, t Table) error {
 	var hsum float64
 	for i, tr := range t.Rows {
 		if i != 0 {
-			cs.Tm(gdf.Translate(gdf.NewMatrix(), start.X, start.Y-hsum-cs.Leading))
+			cs.Tm(gdf.Translate(start.X, start.Y-hsum-cs.Leading))
 		}
 
 		for j, td := range tr {
@@ -71,13 +71,13 @@ func DrawTable(cs *gdf.ContentStream, t Table) error {
 	cs.Re(start.X, start.Y-height, width, height)
 	cs.Stroke()
 	var curX, curY float64
-	cs.WSmall(2)
+	cs.SetLineWidth(2)
 	for i := 0; i < t.NR-1; i++ {
 		curY += t.RowHeights[i]
 		cs.MoveTo(start.X, start.Y-curY)
 		cs.LineTo(start.X+width, start.Y-curY)
 		if i == 1 {
-			cs.WSmall(1)
+			cs.SetLineWidth(1)
 		}
 		cs.Stroke()
 

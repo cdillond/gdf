@@ -11,52 +11,72 @@ type ContentStream struct {
 	*GS
 	*TextObj
 	ExtGState
-	GStack []*GS        // Graphics state stack
-	Stack  []StackState // Records the type of the most recent object pushed to a stack
-	Parent *Page
-	buf    *bytes.Buffer
-	refnum int
+	GSStack []*GS        // Graphics state stack
+	stack   []stackState // used for recording the order of calls to QSave/QRestore and BeginText/EndText
+	Parent  *Page
+	buf     *bytes.Buffer
+	refnum  int
 }
 
-type StackState uint8
+type stackState uint8
 
 const (
-	G_STATE StackState = iota
+	G_STATE stackState = iota
 	T_STATE
 )
 
 func (c *ContentStream) Close() {
-	for i := len(c.Stack) - 1; i >= 0; i-- {
-		switch c.Stack[i] {
+	for i := len(c.stack) - 1; i >= 0; i-- {
+		switch c.stack[i] {
 		case G_STATE:
-			c.Q()
+			c.QRestore()
 		case T_STATE:
-			c.ET()
+			c.et()
 		}
 	}
 }
 
-func (c *ContentStream) BT() error {
+type EndText func() error
+
+// BeginText declares a new text object within the ContentStream. It must be called before drawing
+// any text to c. It returns an EndText function, which must be called to close the text object, and
+// an error. All successive calls to BeginText before EndText is called will result in an error.
+// Pairs of BeginText/EndText calls should not be interleaved with pairs of QSave/Restore calls,
+// although each pair can fully contain instances of the other pair.
+// BeginText automatically sets the current Text Matrix and the Line Matrix equal to the identity matrix.
+// If you do not wish for all glyphs to appear at the origin, you must also adjust the current Text Matrix
+// or Current Transformation Matrix accordingly.
+func (c *ContentStream) BeginText() (EndText, error) {
 	if c.TextObj != nil {
-		return fmt.Errorf("text objects cannot be statically nested")
+		return nil, fmt.Errorf("text objects cannot be statically nested")
 	}
 	c.TextObj = &TextObj{
 		Matrix:     NewMatrix(),
 		LineMatrix: NewMatrix(),
 	}
-	c.Stack = append(c.Stack, T_STATE)
+	c.stack = append(c.stack, T_STATE)
 	_, err := c.buf.Write([]byte("BT\n"))
 	if err != nil {
-		return err
+		return nil, err
 	}
-	return nil
+	return func() error {
+		if c.TextObj == nil {
+			return fmt.Errorf("text object is already closed")
+		}
+		c.stack = c.stack[:len(c.stack)-1]
+		_, err := c.buf.Write([]byte("ET\n"))
+		if err != nil {
+			return err
+		}
+		return nil
+	}, nil
 }
 
-func (c *ContentStream) ET() error {
+func (c *ContentStream) et() error {
 	if c.TextObj == nil {
 		return fmt.Errorf("text object is already closed")
 	}
-	c.Stack = c.Stack[:len(c.Stack)-1]
+	c.stack = c.stack[:len(c.stack)-1]
 	_, err := c.buf.Write([]byte("ET\n"))
 	if err != nil {
 		return err
@@ -112,37 +132,4 @@ func (c *ContentStream) encode(w io.Writer) (int, error) {
 		return n + t, err
 	}
 	return n + t, nil
-}
-
-func (c *ContentStream) SetRGB(r, g, b float64) {
-	fmt.Fprintf(c.buf, "%f %f %f rg\n", r, g, b)
-}
-func (c *ContentStream) SetRGBStroking(r, g, b float64) {
-	fmt.Fprintf(c.buf, "%f %f %f RG\n", r, g, b)
-}
-func (c *ContentStream) SetG(g float64) {
-	fmt.Fprintf(c.buf, "%f g\n", g)
-}
-func (c *ContentStream) SetGStroking(g float64) {
-	fmt.Fprintf(c.buf, "%f G\n", g)
-}
-
-// Clip path (non-zero winding).
-// A clipping path operator (W or W*, shown in "Table 60 — Clipping path operators") may appear after
-// the last path construction operator and before the path-painting operator that terminates a path object.
-func (c *ContentStream) W() {
-	switch c.PathState {
-	case PATH_BUILDING:
-		c.PathState = PATH_CLIPPING
-		c.buf.Write([]byte("W\n"))
-	}
-}
-
-// Clip path (even-odd).
-func (c *ContentStream) WStar() {
-	switch c.PathState {
-	case PATH_BUILDING:
-		c.PathState = PATH_CLIPPING
-		c.buf.Write([]byte("W*\n"))
-	}
 }

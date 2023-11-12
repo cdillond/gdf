@@ -63,7 +63,7 @@ func BreakShaped(text []rune, ts TextState, maxW float64) []ShapedLine {
 
 			sl.SquishBP = len(tmpText) - 1
 			// calculate hyphenated text
-			hyphIndex, existing := IntraWordBP([]byte(string(tmpText[sl.StretchBP:sl.SquishBP])))
+			hyphIndex, existing := intraWordBP([]byte(string(tmpText[sl.StretchBP:sl.SquishBP])))
 			if hyphIndex > 0 {
 				var hyphchar rune
 				sl.SquishBP = sl.StretchBP + hyphIndex + 1

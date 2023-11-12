@@ -4,7 +4,7 @@ import "fmt"
 
 // Graphics State
 type GS struct {
-	Matrix // CTM
+	Matrix // Current Transformation Matrix
 	TextState
 	LineCap
 	LineJoin
@@ -70,70 +70,76 @@ func NewGS() *GS {
 	return out
 }
 
-// save graphic state to the stack
-func (c *ContentStream) QSmall() {
+// QSave pushes the current GS (graphics sate) to c's GSStack (graphics state stack).
+func (c *ContentStream) QSave() {
 	g := c.GS
-	c.GStack = append(c.GStack, g)
-	c.Stack = append(c.Stack, G_STATE)
+	c.GSStack = append(c.GSStack, g)
+	c.stack = append(c.stack, G_STATE)
 	c.buf.Write([]byte("q\n"))
 }
 
-// restore graphic state from the stack
-func (c *ContentStream) Q() error {
-	if c.Stack[len(c.Stack)-1] != G_STATE {
+// QRestore pops the most recent addition to c's GSStack off the stack and
+// sets c's current GS equal to that value. It returns an error if c's GSStack
+// is empty or if c.BeginText() has been called after the last call to c.QSave(),
+// and the returned EndText function has not yet been called.
+func (c *ContentStream) QRestore() error {
+	if len(c.stack) == 0 {
+		return fmt.Errorf("current GSStack is empty")
+	}
+	if c.stack[len(c.stack)-1] != G_STATE {
 		return fmt.Errorf("cannot interleave q/Q and BT/ET pairs")
 	}
-	c.Stack = c.Stack[:len(c.Stack)-1]
-	c.GS = c.GStack[len(c.GStack)-1]
-	c.GStack = c.GStack[:len(c.GStack)-1]
+	c.stack = c.stack[:len(c.stack)-1]
+	c.GS = c.GSStack[len(c.GSStack)-1]
+	c.GSStack = c.GSStack[:len(c.GSStack)-1]
 	c.buf.Write([]byte("Q\n"))
 	return nil
 }
 
-// Concatenate t to the CTM
+// Sets c's Current Transformation Matrix to the matrix product of m and c.GS.Matrix.
 func (c *ContentStream) Cm(m Matrix) {
 	c.GS.Matrix = Mul(c.GS.Matrix, m)
 	fmt.Fprintf(c.buf, "%f %f %f %f %f %f cm\n", m.A, m.B, m.C, m.D, m.E, m.F)
 }
 
-// Set linewidth to f
-func (c *ContentStream) WSmall(f float64) {
+// Sets the linewidth (c.GS.LineWidth) to f.
+func (c *ContentStream) SetLineWidth(f float64) {
 	c.LineWidth = f
 	fmt.Fprintf(c.buf, "%f w\n", f)
 }
 
-// Set the line cap style
-func (c *ContentStream) J(lc LineCap) {
+// Sets the line cap style (c.GS.LineCap) to lc.
+func (c *ContentStream) SetLineCap(lc LineCap) {
 	c.LineCap = lc
 	fmt.Fprintf(c.buf, "%d J\n", lc)
 }
 
-// set the line join style
-func (c *ContentStream) JSmall(lj LineJoin) {
+// Sets the line join style (c.GS.LineJoin) to lj.
+func (c *ContentStream) SetLineJoin(lj LineJoin) {
 	c.LineJoin = lj
 	fmt.Fprintf(c.buf, "%d j\n", lj)
 }
 
-// set miter limit
-func (c *ContentStream) M(ml float64) {
+// Sets miter limit (c.GS.MiterLimit) to ml.
+func (c *ContentStream) SetMiterLimit(ml float64) {
 	c.MiterLimit = ml
 	fmt.Fprintf(c.buf, "%f M\n", ml)
 }
 
-// set the dash pattern
-func (c *ContentStream) DSmall(d DashPattern) {
+// Sets the dash pattern (c.GS.DashPattern) to d.
+func (c *ContentStream) SetDashPattern(d DashPattern) {
 	c.DashPattern = d
 	fmt.Fprintf(c.buf, "%v %d d\n", d.Array, d.Phase)
 }
 
-// set the rednering intent
-func (c *ContentStream) Ri(n Name) {
+// Sets the rendering intent (c.GS.RenderingIntent) to n.
+func (c *ContentStream) SetRenderIntent(n Name) {
 	c.RenderingIntent = n
 	fmt.Fprintf(c.buf, "%s ri\n", ToString(n))
 }
 
-// set the flatness
-func (c *ContentStream) ISmall(f float64) {
+// Set the flatness (c.GS.Flatness) to f.
+func (c *ContentStream) SetFlattness(f float64) {
 	c.Flatness = f
 	fmt.Fprintf(c.buf, "%f i\n", f)
 }

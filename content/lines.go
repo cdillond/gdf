@@ -23,10 +23,10 @@ func TextBox(cs *gdf.ContentStream, text string, start gdf.Point, margins gdf.Ma
 	asc := gdf.FUToPt(ascFU, cs.FontSize)
 	desc := gdf.FUToPt(descFU, cs.FontSize)
 	height := asc + desc + margins.Top + margins.Bottom
-	cs.BT()
+	et, _ := cs.BeginText()
 	cs.Td(start.X+margins.Left, start.Y)
 	cs.Tj(text)
-	cs.ET()
+	et()
 	cs.Re(start.X, start.Y-desc-margins.Bottom, ext, height)
 	cs.Stroke()
 	return height, ext

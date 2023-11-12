@@ -9,14 +9,14 @@ import (
 // not be drawn. This can be used to paint bitmap with no background. The foreground color should not be nil.
 func QRCode(c *gdf.ContentStream, bitmap [][]bool, h float64, start gdf.Point, fg, bg gdf.Color) {
 	bitsize := h / float64(len(bitmap[0]))
-	c.QSmall()
+	c.QSave()
+	defer c.QRestore()
 	if bg != nil {
 		c.SetColor(bg)
 		c.Re(start.X, start.Y, h, h)
 		c.Fill()
 	}
 	if fg == nil {
-		c.Q()
 		return
 	}
 	c.SetColor(fg)
@@ -30,5 +30,4 @@ func QRCode(c *gdf.ContentStream, bitmap [][]bool, h float64, start gdf.Point, f
 			}
 		}
 	}
-	c.Q()
 }

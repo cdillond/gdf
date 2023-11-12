@@ -156,7 +156,7 @@ func ParseParagraph(src []rune, indent bool, maxW float64, ts TextState) (Paragr
 				squishExt = lineExt
 
 				// if exisiting, text[stretchBP+1+n] is already a hyphen
-				n, existing := IntraWordBP([]byte(string(text[stretchBP+1 : squishBP])))
+				n, existing := intraWordBP([]byte(string(text[stretchBP+1 : squishBP])))
 				if n > 0 {
 					squishBP = stretchBP + 1 + n + 1
 					squishExt = stretchExt
@@ -233,7 +233,7 @@ func ParseParagraph(src []rune, indent bool, maxW float64, ts TextState) (Paragr
 			var n int
 			var existing bool
 			// if exisiting, text[stretchBP+1+n] is already a hyphen
-			n, existing = IntraWordBP([]byte(string(text[stretchBP+1 : squishBP])))
+			n, existing = intraWordBP([]byte(string(text[stretchBP+1 : squishBP])))
 
 			if n > 0 {
 				squishBP = stretchBP + 1 + n + 1

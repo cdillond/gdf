@@ -9,11 +9,19 @@ const (
 	MM  float64 = CM / 10       // 1 millimeter in points
 )
 
+type Rect struct {
+	LLX, LLY, URX, URY float64
+}
+
 var (
 	A4        = Rect{0, 0, 210 * MM, 297 * MM}
 	US_LETTER = Rect{0, 0, 8.5 * IN, 11 * IN}
 	US_LEGAL  = Rect{0, 0, 8.5 * IN, 14 * IN}
 )
+
+type Margins struct {
+	Left, Right, Top, Bottom float64
+}
 
 var (
 	HALF_INCH_MARGINS = Margins{.5 * IN, .5 * IN, .5 * IN, .5 * IN}
@@ -27,6 +35,7 @@ func FUToPt(n, fontSize float64) float64 { return n * fontSize / 1000 }
 // Converts n points to font units given a font size in points. For PDFs, ppem is always 1000.
 func PtToFU(n, fontSize float64) float64 { return n * 1000 / fontSize }
 
+// Returns the Rect that results from applying m to r.
 func Bounds(r Rect, m Margins) Rect {
 	return Rect{
 		LLX: r.LLX + m.Left,
@@ -34,10 +43,6 @@ func Bounds(r Rect, m Margins) Rect {
 		URX: r.URX - m.Right,
 		URY: r.URY - m.Top,
 	}
-}
-
-type Rect struct {
-	LLX, LLY, URX, URY float64
 }
 
 func (r Rect) Height() float64 { return r.URY - r.LLY }
@@ -54,8 +59,4 @@ func Diagonal(r Rect) float64 {
 func Angles(r Rect) (float64, float64) {
 	a := math.Atan((r.URY - r.LLY) / (r.URX - r.LLX))
 	return a, 90 - a
-}
-
-type Margins struct {
-	Left, Right, Top, Bottom float64
 }

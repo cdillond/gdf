@@ -13,8 +13,6 @@ const (
 	MAC_ROMAN_ENCODING
 )
 
-type EncodedInput []byte
-
 var encs = []string{"Symbolic", "WinAnsiEncoding", "MacRomanEncoding"}
 
 func toNameString(e Encoding) string {

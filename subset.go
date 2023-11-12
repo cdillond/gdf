@@ -26,18 +26,14 @@ func (f *Font) subset() error {
 		return fmt.Errorf("too few characters")
 	}
 
-	//b := cfnt.FromGoSFNT(f.Font)
-	//c, err := cfnt.ParseSFNT(b, 0)
-	//if err != nil {
-	//	return err
-	//}
-	f.m.Lock()
-	if f.c == nil {
-		f.m.Unlock()
-		return fmt.Errorf("susbetting error")
+	b := cfnt.FromGoSFNT(f.Font)
+	c, err := cfnt.ParseSFNT(b, 0)
+	if err != nil {
+		return err
 	}
-	subfnt, _ := f.c.Subset(glyphs, cfnt.WritePDFTables)
-	f.m.Unlock()
+
+	subfnt, _ := c.Subset(glyphs, cfnt.WritePDFTables) //f.c.Subset(glyphs, cfnt.WritePDFTables)
+
 	sbuf := new(bytes.Buffer)
 	sbuf.Read(subfnt)
 	f.source.buf = sbuf
