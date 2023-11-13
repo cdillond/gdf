@@ -2,7 +2,7 @@ package gdf
 
 import "math"
 
-// Represents the first 2 columns of a 3-column Affine transformation matrix, whose third column is always [0,0,1].
+// Represents the first 2 columns of a 3-column affine transformation matrix, whose third column is always [0,0,1].
 type Matrix struct {
 	A float64 // X scale
 	B float64 // X shear

@@ -6,7 +6,7 @@ import (
 	"golang.org/x/image/math/fixed"
 )
 
-func CalculateWidths(f *Font) {
+func calculateWidths(f *Font) {
 	bs := make([]int, 256)
 	for char, adv := range f.charset {
 		b, err := f.enc.Bytes([]byte(string(char)))
@@ -69,7 +69,7 @@ func ShapedGlyphAdv(r1, r2 rune, f *Font) (int, int) {
 	return adv, int(kern)
 }
 
-func FontBBox(font *sfnt.Font, buf *sfnt.Buffer) (fixed.Rectangle26_6, error) {
+func fontBBox(font *sfnt.Font, buf *sfnt.Buffer) (fixed.Rectangle26_6, error) {
 	bbox := *new(fixed.Rectangle26_6)
 	for i := sfnt.GlyphIndex(0); i < sfnt.GlyphIndex(font.NumGlyphs()); i++ {
 		bounds, _, err := font.GlyphBounds(buf, i, 1000, 0)

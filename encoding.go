@@ -8,12 +8,12 @@ import (
 type Encoding uint
 
 const (
-	SYMBOLIC_ENCODING Encoding = iota
-	WIN_ANSI_ENCODING
+	WIN_ANSI_ENCODING Encoding = iota
+	SYMBOLIC_ENCODING
 	MAC_ROMAN_ENCODING
 )
 
-var encs = []string{"Symbolic", "WinAnsiEncoding", "MacRomanEncoding"}
+var encs = []string{"WinAnsiEncoding", "Symbolic", "MacRomanEncoding"}
 
 func toNameString(e Encoding) string {
 	return encs[e]

@@ -74,7 +74,7 @@ func NewGS() *GS {
 func (c *ContentStream) QSave() {
 	g := c.GS
 	c.GSStack = append(c.GSStack, g)
-	c.stack = append(c.stack, G_STATE)
+	c.stack = append(c.stack, g_STATE)
 	c.buf.Write([]byte("q\n"))
 }
 
@@ -86,7 +86,7 @@ func (c *ContentStream) QRestore() error {
 	if len(c.stack) == 0 {
 		return fmt.Errorf("current GSStack is empty")
 	}
-	if c.stack[len(c.stack)-1] != G_STATE {
+	if c.stack[len(c.stack)-1] != g_STATE {
 		return fmt.Errorf("cannot interleave q/Q and BT/ET pairs")
 	}
 	c.stack = c.stack[:len(c.stack)-1]
@@ -96,7 +96,7 @@ func (c *ContentStream) QRestore() error {
 	return nil
 }
 
-// Sets c's Current Transformation Matrix to the matrix product of m and c.GS.Matrix.
+// Sets c's Current Transformation Matrix (c.GS.Matrix) to the matrix product of m and c.GS.Matrix.
 func (c *ContentStream) Cm(m Matrix) {
 	c.GS.Matrix = Mul(c.GS.Matrix, m)
 	fmt.Fprintf(c.buf, "%f %f %f %f %f %f cm\n", m.A, m.B, m.C, m.D, m.E, m.F)
@@ -135,7 +135,7 @@ func (c *ContentStream) SetDashPattern(d DashPattern) {
 // Sets the rendering intent (c.GS.RenderingIntent) to n.
 func (c *ContentStream) SetRenderIntent(n Name) {
 	c.RenderingIntent = n
-	fmt.Fprintf(c.buf, "%s ri\n", ToString(n))
+	fmt.Fprintf(c.buf, "%s ri\n", n)
 }
 
 // Set the flatness (c.GS.Flatness) to f.
@@ -144,7 +144,7 @@ func (c *ContentStream) SetFlattness(f float64) {
 	fmt.Fprintf(c.buf, "%f i\n", f)
 }
 
-func (c *ContentStream) XGraphicState(e ExtGState) {
+func (c *ContentStream) XGraphicsState(e ExtGState) {
 	var i int
 	for ; i < len(c.Parent.ExtGState); i++ {
 		if c.Parent.ExtGState[i] == &e {

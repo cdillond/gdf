@@ -48,15 +48,15 @@ func Bounds(r Rect, m Margins) Rect {
 func (r Rect) Height() float64 { return r.URY - r.LLY }
 func (r Rect) Width() float64  { return r.URX - r.LLX }
 
-// Returns the length of a rectangle's diagonal.
-func Diagonal(r Rect) float64 {
+// Returns the length of r's diagonal.
+func (r Rect) Diagonal() float64 {
 	a := r.URX - r.LLX
 	b := r.URY - r.LLY
 	return math.Sqrt(a*a + b*b)
 }
 
 // Returns the angle, in radians, formed by the lower side of the rectangle and the lower-left to upper-right diagonal, and that angle's complement.
-func Angles(r Rect) (float64, float64) {
+func (r Rect) Angles() (float64, float64) {
 	a := math.Atan((r.URY - r.LLY) / (r.URX - r.LLX))
 	return a, 90 - a
 }

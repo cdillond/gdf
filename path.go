@@ -15,7 +15,7 @@ func (c *ContentStream) LineTo(x, y float64) {
 }
 
 // Append a cubic Bézier curve to the current path; c.
-func (c *ContentStream) CSmall(x1, y1, x2, y2, x3, y3 float64) {
+func (c *ContentStream) C(x1, y1, x2, y2, x3, y3 float64) {
 	switch c.PathState {
 	case PATH_NONE, PATH_CLIPPING:
 		return
@@ -25,7 +25,7 @@ func (c *ContentStream) CSmall(x1, y1, x2, y2, x3, y3 float64) {
 }
 
 // Append a cubic Bézier curve to the current path; v.
-func (c *ContentStream) VSmall(x2, y2, x3, y3 float64) {
+func (c *ContentStream) V(x2, y2, x3, y3 float64) {
 	switch c.PathState {
 	case PATH_NONE, PATH_CLIPPING:
 		return
@@ -35,7 +35,7 @@ func (c *ContentStream) VSmall(x2, y2, x3, y3 float64) {
 }
 
 // Append a cubic Bézier curve to the current path; y.
-func (c *ContentStream) YSmall(x1, y1, x3, y3 float64) {
+func (c *ContentStream) Y(x1, y1, x3, y3 float64) {
 	switch c.PathState {
 	case PATH_NONE, PATH_CLIPPING:
 		return
@@ -64,7 +64,7 @@ func (c *ContentStream) Stroke() {
 }
 
 // Close and stroke path; s.
-func (c *ContentStream) CloseStroke() {
+func (c *ContentStream) ClosePathStroke() {
 	switch c.PathState {
 	case PATH_BUILDING, PATH_CLIPPING:
 		c.buf.Write([]byte("s\n"))
@@ -115,7 +115,7 @@ func (c *ContentStream) FillEOStroke() {
 }
 
 // Close path, fill path using the non-zero winding rule, then stroke path; b.
-func (c *ContentStream) CloseFillStroke() {
+func (c *ContentStream) ClosePathFillStroke() {
 	switch c.PathState {
 	case PATH_BUILDING, PATH_CLIPPING:
 		c.buf.Write([]byte("b\n"))
@@ -125,7 +125,7 @@ func (c *ContentStream) CloseFillStroke() {
 }
 
 // Close path, fill path using the even-odd winding rule, then stroke path; b*.
-func (c *ContentStream) CloseFillEOStroke() {
+func (c *ContentStream) ClosePathFillEOStroke() {
 	switch c.PathState {
 	case PATH_BUILDING, PATH_CLIPPING:
 		c.buf.Write([]byte("b*\n"))
@@ -151,10 +151,16 @@ func (c *ContentStream) Re(x, y, w, h float64) {
 	fmt.Fprintf(c.buf, "%f %f %f %f re\n", x, y, w, h)
 }
 
-// Clip path (non-zero winding).
-// A clipping path operator (W or W*, shown in "Table 60 — Clipping path operators") may appear after
-// the last path construction operator and before the path-painting operator that terminates a path object.
-func (c *ContentStream) W() {
+// Append r to the current path; a possibly more convenient version of Re.
+func (c *ContentStream) Rect(r Rect) {
+	c.PathState = PATH_BUILDING
+	c.CurPt = Point{r.LLX, r.LLY}
+	fmt.Fprintf(c.buf, "%f %f %f %f re\n", r.LLX, r.LLY, r.URX-r.LLX, r.URY-r.LLY)
+}
+
+// Clip path (non-zero winding). A clipping path operator. May appear after the last path
+// construction operator and before the path-painting operator that terminates a path object.
+func (c *ContentStream) Clip() {
 	switch c.PathState {
 	case PATH_BUILDING:
 		c.PathState = PATH_CLIPPING
@@ -162,8 +168,9 @@ func (c *ContentStream) W() {
 	}
 }
 
-// Clip path (even-odd).
-func (c *ContentStream) WStar() {
+// Clip path (even-odd). A clipping path operator. May appear after the last path
+// construction operator and before the path-painting operator that terminates a path object.
+func (c *ContentStream) ClipEO() {
 	switch c.PathState {
 	case PATH_BUILDING:
 		c.PathState = PATH_CLIPPING

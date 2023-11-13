@@ -7,17 +7,17 @@ import (
 	"strings"
 )
 
-type ResourceStream struct {
+type resourceStream struct {
 	Filter
 	Length int
 	buf    *bytes.Buffer
 	refnum int
 }
 
-func (r *ResourceStream) setRef(i int)    { r.refnum = i }
-func (r *ResourceStream) refNum() int     { return r.refnum }
-func (r *ResourceStream) children() []Obj { return []Obj{} }
-func (r *ResourceStream) encode(w io.Writer) (int, error) {
+func (r *resourceStream) setRef(i int)    { r.refnum = i }
+func (r *resourceStream) refNum() int     { return r.refnum }
+func (r *resourceStream) children() []obj { return []obj{} }
+func (r *resourceStream) encode(w io.Writer) (int, error) {
 	var n int
 	switch r.Filter {
 	case FILTER_FLATE:
@@ -56,7 +56,7 @@ func (r *ResourceStream) encode(w io.Writer) (int, error) {
 	return n + t, nil
 }
 
-func (r ResourceDict) String() string {
+func (r resourceDict) String() string {
 	bldr := new(strings.Builder)
 	bldr.WriteString("<<\n")
 	if len(r.Fonts) > 0 {

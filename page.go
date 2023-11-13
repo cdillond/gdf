@@ -12,10 +12,10 @@ type Page struct {
 	MediaBox Rect
 	CropBox  Rect // "the rectangle of user space corresponding to the visible area of the intended output medium (display window or printed page)"
 	Content  []*ContentStream
-	ResourceDict
+	resourceDict
 	Margins
 }
-type ResourceDict struct {
+type resourceDict struct {
 	Fonts     []*Font
 	ExtGState []*ExtGState
 	/*
@@ -66,13 +66,13 @@ func ReplacePage(pdf *PDF, page *Page, i int) error {
 
 func (p *Page) setRef(i int) { p.refnum = i }
 func (p *Page) refNum() int  { return p.refnum }
-func (p *Page) children() []Obj {
-	out := make([]Obj, 0, len(p.ResourceDict.Fonts)+len(p.Content)) //+len(p.ResourceDict.XObject))
-	for i := range p.ResourceDict.Fonts {
-		out = append(out, p.ResourceDict.Fonts[i])
+func (p *Page) children() []obj {
+	out := make([]obj, 0, len(p.resourceDict.Fonts)+len(p.Content)) //+len(p.ResourceDict.XObject))
+	for i := range p.resourceDict.Fonts {
+		out = append(out, p.resourceDict.Fonts[i])
 	}
-	for i := range p.ResourceDict.ExtGState {
-		out = append(out, p.ResourceDict.ExtGState[i])
+	for i := range p.resourceDict.ExtGState {
+		out = append(out, p.resourceDict.ExtGState[i])
 	}
 	//for i := range p.ResourceDict.XObject {
 	//	obj := Obj(p.ResourceDict.XObject[i])
@@ -86,7 +86,7 @@ func (p *Page) children() []Obj {
 
 func (p *Page) encode(w io.Writer) (int, error) {
 	return fmt.Fprintf(w, "<<\n/Type /Page\n/Parent 2 0 R\n/MediaBox [%f %f %f %f]\n/CropBox [%f %f %f %f]\n/Contents %d 0 R\n/Resources %s>>\n",
-		p.MediaBox.LLX, p.MediaBox.LLY, p.MediaBox.URX, p.MediaBox.URY, p.CropBox.LLX, p.CropBox.LLY, p.CropBox.URX, p.CropBox.URY, p.Content[0].refNum(), p.ResourceDict.String())
+		p.MediaBox.LLX, p.MediaBox.LLY, p.MediaBox.URX, p.MediaBox.URY, p.CropBox.LLX, p.CropBox.LLY, p.CropBox.URX, p.CropBox.URY, p.Content[0].refNum(), p.resourceDict.String())
 }
 
 func (p *Page) NewContentStream() *ContentStream {

@@ -11,8 +11,8 @@ type Pages struct {
 }
 
 func (p *Pages) refNum() int { return p.refnum }
-func (p *Pages) children() []Obj {
-	out := make([]Obj, 0, len(p.P))
+func (p *Pages) children() []obj {
+	out := make([]obj, 0, len(p.P))
 	for _, page := range p.P {
 		out = append(out, page)
 	}

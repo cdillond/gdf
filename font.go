@@ -24,7 +24,7 @@ type Font struct {
 	Encoding  Name
 	charset   map[rune]int // maps a font's runes to their default glyph advances
 	enc       *encoding.Encoder
-	source    *ResourceStream
+	source    *resourceStream
 	buf       *sfnt.Buffer
 	noSubset  bool // whether the font represents a subset
 }
@@ -33,19 +33,19 @@ func (f *Font) SetFilter(filter Filter) {
 	f.source.Filter = filter
 }
 
-func LoadTrueTypeBytes(b []byte, flag FontFlag, encoding Encoding) (*Font, error) {
+// Returns a *Font object, which can be used for drawing text to a ContentStream, and an error.
+func LoadTrueType(b []byte, flag FontFlag, encoding Encoding) (*Font, error) {
 	fnt, err := sfnt.Parse(b)
 	if err != nil {
 		return nil, err
 	}
-
 	out := &Font{
 		Type:     Name("Font"),
 		Subtype:  Name("TrueType"),
 		Encoding: Name(toNameString(encoding)),
 		charset:  make(map[rune]int),
 		enc:      toEncoder(encoding),
-		source: &ResourceStream{
+		source: &resourceStream{
 			buf:    new(bytes.Buffer),
 			Filter: FILTER_FLATE,
 		},
@@ -55,18 +55,7 @@ func LoadTrueTypeBytes(b []byte, flag FontFlag, encoding Encoding) (*Font, error
 		out.noSubset = true
 		out.source.buf.Write(b)
 		flag ^= NO_SUBSET
-	} /*else {/*
-		go func() {
-			out.m.Lock()
-			defer out.m.Unlock()
-			bf, err := cfnt.ToSFNT(b)
-			if err != nil {
-				return
-			}
-			c, _ := cfnt.ParseSFNT(bf, 0)
-			out.c = c
-		}()
-	} */
+	}
 	bf, err := fnt.Name(out.buf, sfnt.NameIDPostScript)
 	if err != nil {
 		return nil, err
@@ -80,17 +69,18 @@ func LoadTrueTypeBytes(b []byte, flag FontFlag, encoding Encoding) (*Font, error
 	return out, nil
 }
 
-func LoadTrueTypeFont(path string, flag FontFlag, encoding Encoding) (*Font, error) {
+// Returns a *Font object, which can be used for drawing text to a ContentStream, and an error.
+func LoadTrueTypeFile(path string, flag FontFlag, encoding Encoding) (*Font, error) {
 	b, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}
-	return LoadTrueTypeBytes(b, flag, encoding)
+	return LoadTrueType(b, flag, encoding)
 }
 
 type SimpleFD struct {
 	Type        Name
-	FontName    Name // same as /BaseFont
+	FontName    Name
 	Flags       FontFlag
 	FontBBox    []int
 	ItalicAngle int
@@ -109,9 +99,9 @@ type SimpleFD struct {
 	AvgWidth     int
 	MaxWidth     int
 	MissingWidth int
-	FontFile     *ResourceStream // Type1 fonts
-	FontFile2    *ResourceStream // TrueType fonts
-	FontFile3    *ResourceStream // Program defined by the Subtype entry in the stream dictionray
+	FontFile     *resourceStream // Type1 fonts
+	FontFile2    *resourceStream // TrueType fonts
+	FontFile3    *resourceStream // Program defined by the Subtype entry in the stream dictionray
 	CharSet      string
 
 	refnum int
@@ -122,7 +112,7 @@ func NewSimpleFD(fnt *sfnt.Font, flag FontFlag, buf *sfnt.Buffer) *SimpleFD {
 	fd := new(SimpleFD)
 	fd.Type = Name("FontDescriptor")
 	fd.Flags = flag
-	res, _ := FontBBox(fnt, buf)
+	res, _ := fontBBox(fnt, buf)
 	fd.FontBBox = []int{int(res.Min.X), int(res.Min.Y), int(res.Max.X), int(res.Max.Y)}
 
 	pt := fnt.PostTable()
@@ -142,35 +132,35 @@ type FontFlag uint32
 const (
 	FIXED_PITCH FontFlag = 1 << 0
 	SERIF       FontFlag = 1 << 1
-	SYMBOLIC    FontFlag = 1 << 2 // must be set when NONSYMBOLIC is not set and vice versa
+	SYMBOLIC    FontFlag = 1 << 2 // Must be set when NONSYMBOLIC is not set and vice versa.
 	SCRIPT      FontFlag = 1 << 3
-	NONSYMBOLIC FontFlag = 1 << 5
+	NONSYMBOLIC FontFlag = 1 << 5 // Must be set when SYMBOLIC is not set and vice versa.
 	ITALIC      FontFlag = 1 << 6
 	ALL_CAP     FontFlag = 1 << 16
 	SMALL_CAP   FontFlag = 1 << 17
 	FORCE_BOLD  FontFlag = 1 << 18
 
-	NO_SUBSET FontFlag = 1 << 19 // prevent gpdf from subsetting a font
+	NO_SUBSET FontFlag = 1 << 19 // Prevent gdf from subsetting a font. Not in the PDF spec.
 )
 
 func (f *Font) setRef(i int) { f.refnum = i }
 func (f *Font) refNum() int  { return f.refnum }
-func (f *Font) children() []Obj {
-	return []Obj{f.SimpleFD, f.source}
+func (f *Font) children() []obj {
+	return []obj{f.SimpleFD, f.source}
 }
 func (f *Font) encode(w io.Writer) (int, error) {
 	var encstr string
 	if f.Encoding != Name("Symbolic") {
-		encstr = fmt.Sprintf("/Encoding %s\n", ToString(f.Encoding))
+		encstr = fmt.Sprintf("/Encoding %s\n", f.Encoding)
 	}
 	return fmt.Fprintf(w, "<<\n/Type %s\n/Subtype %s\n/BaseFont %s\n/FirstChar %d\n/LastChar %d\n/Widths %v\n%s/FontDescriptor %d 0 R\n>>\n",
-		ToString(f.Type), ToString(f.Subtype), ToString(f.BaseFont), f.FirstChar, f.LastChar, f.Widths, encstr, f.SimpleFD.refNum())
+		f.Type, f.Subtype, f.BaseFont, f.FirstChar, f.LastChar, f.Widths, encstr, f.SimpleFD.refNum())
 }
 
 func (fd *SimpleFD) setRef(i int)    { fd.refnum = i }
 func (fd *SimpleFD) refNum() int     { return fd.refnum }
-func (fd *SimpleFD) children() []Obj { return []Obj{} } // no need to include FontFile2
+func (fd *SimpleFD) children() []obj { return []obj{} } // no need to include FontFile2
 func (fd *SimpleFD) encode(w io.Writer) (int, error) {
 	return fmt.Fprintf(w, "<<\n/Type %s\n/FontName %s\n/Flags %d\n/FontBBox %v\n/ItalicAngle %d\n/Ascent %d\n/Descent %d\n/CapHeight %d\n/StemV %d\n/XHeight %d\n/FontFile2 %d 0 R\n>>\n",
-		ToString(fd.Type), ToString(fd.FontName), fd.Flags, fd.FontBBox, fd.ItalicAngle, fd.Ascent, fd.Descent, fd.CapHeight, fd.StemV, fd.XHeight, fd.FontFile2.refNum())
+		fd.Type, fd.FontName, fd.Flags, fd.FontBBox, fd.ItalicAngle, fd.Ascent, fd.Descent, fd.CapHeight, fd.StemV, fd.XHeight, fd.FontFile2.refNum())
 }

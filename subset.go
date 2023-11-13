@@ -1,7 +1,6 @@
 package gdf
 
 import (
-	"bytes"
 	"fmt"
 	"sort"
 
@@ -21,10 +20,12 @@ func (f *Font) subset() error {
 		}
 		glyphs = append(glyphs, uint16(gid))
 	}
-	sort.Slice(glyphs, func(i, j int) bool { return glyphs[i] < glyphs[j] })
+
 	if len(glyphs) < 1 {
 		return fmt.Errorf("too few characters")
 	}
+
+	sort.Slice(glyphs, func(i, j int) bool { return glyphs[i] < glyphs[j] })
 
 	b := cfnt.FromGoSFNT(f.Font)
 	c, err := cfnt.ParseSFNT(b, 0)
@@ -32,10 +33,7 @@ func (f *Font) subset() error {
 		return err
 	}
 
-	subfnt, _ := c.Subset(glyphs, cfnt.WritePDFTables) //f.c.Subset(glyphs, cfnt.WritePDFTables)
-
-	sbuf := new(bytes.Buffer)
-	sbuf.Read(subfnt)
-	f.source.buf = sbuf
+	subfnt, _ := c.Subset(glyphs, cfnt.WritePDFTables)
+	f.source.buf.Read(subfnt)
 	return nil
 }

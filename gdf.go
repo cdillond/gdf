@@ -7,7 +7,7 @@ import (
 
 type PDF struct {
 	catalog catalog // root object
-	objects []Obj
+	objects []obj
 	n       int   // byte offset
 	xref    []int // maps reference numbers [index] to the corresponding object's byte offset
 }
@@ -19,8 +19,8 @@ func NewPDF() *PDF {
 }
 
 func buildPDFTree(pdf *PDF) {
-	includeObj(pdf, Obj((&pdf.catalog)))
-	includeChildren(pdf, Obj(&(pdf.catalog)))
+	includeObj(pdf, obj((&pdf.catalog)))
+	includeChildren(pdf, obj(&(pdf.catalog)))
 }
 
 func WritePDF(pdf *PDF, w io.Writer) error {
@@ -41,19 +41,19 @@ func WritePDF(pdf *PDF, w io.Writer) error {
 	return nil
 }
 
-func includeObj(pdf *PDF, obj Obj) {
-	if obj.refNum() == 0 { // has not been set yet
-		pdf.objects = append(pdf.objects, obj)
-		obj.setRef(len(pdf.objects))
+func includeObj(pdf *PDF, o obj) {
+	if o.refNum() == 0 { // has not been set yet
+		pdf.objects = append(pdf.objects, o)
+		o.setRef(len(pdf.objects))
 	}
 }
 
-func includeChildren(pdf *PDF, obj Obj) {
+func includeChildren(pdf *PDF, o obj) {
 
-	for _, child := range obj.children() {
+	for _, child := range o.children() {
 		// finalize fonts
 		if fnt, ok := child.(*Font); ok {
-			CalculateWidths(fnt)
+			calculateWidths(fnt)
 			if !fnt.noSubset {
 				err := fnt.subset()
 				if err != nil {

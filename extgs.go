@@ -18,10 +18,10 @@ func NewExtGState() ExtGState {
 
 func (e *ExtGState) setRef(i int) { e.refnum = i }
 func (e *ExtGState) refNum() int  { return e.refnum }
-func (e *ExtGState) children() []Obj {
-	out := []Obj{}
+func (e *ExtGState) children() []obj {
+	out := []obj{}
 	for _, val := range e.Dict {
-		if v, ok := val.(Obj); ok {
+		if v, ok := val.(obj); ok {
 			out = append(out, v)
 		}
 	}
@@ -51,7 +51,7 @@ func (e *ExtGState) encode(w io.Writer) (int, error) {
 			if err != nil {
 				return n + t, err
 			}
-		case Obj:
+		case obj:
 			t, err = fmt.Fprintf(w, "/%s %d 0 R\n", key, v)
 			if err != nil {
 				return n + t, err

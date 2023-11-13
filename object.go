@@ -2,13 +2,13 @@ package gdf
 
 import "io"
 
-type Obj interface {
+type obj interface {
 	setRef(i int)
 	refNum() int
-	children() []Obj
+	children() []obj
 	encode(w io.Writer) (int, error)
 }
 
 type Name string
 
-func ToString(n Name) string { return "/" + string(n) }
+func (n Name) String() string { return "/" + string(n) }

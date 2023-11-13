@@ -21,20 +21,9 @@ type ContentStream struct {
 type stackState uint8
 
 const (
-	G_STATE stackState = iota
-	T_STATE
+	g_STATE stackState = iota
+	t_STATE
 )
-
-func (c *ContentStream) Close() {
-	for i := len(c.stack) - 1; i >= 0; i-- {
-		switch c.stack[i] {
-		case G_STATE:
-			c.QRestore()
-		case T_STATE:
-			c.et()
-		}
-	}
-}
 
 type EndText func() error
 
@@ -44,8 +33,7 @@ type EndText func() error
 // Pairs of BeginText/EndText calls should not be interleaved with pairs of QSave/Restore calls,
 // although each pair can fully contain instances of the other pair.
 // BeginText automatically sets the current Text Matrix and the Line Matrix equal to the identity matrix.
-// If you do not wish for all glyphs to appear at the origin, you must also adjust the current Text Matrix
-// or Current Transformation Matrix accordingly.
+// If you do not wish for all glyphs to appear at the origin, you must also adjust the current Text Matrix.
 func (c *ContentStream) BeginText() (EndText, error) {
 	if c.TextObj != nil {
 		return nil, fmt.Errorf("text objects cannot be statically nested")
@@ -54,7 +42,7 @@ func (c *ContentStream) BeginText() (EndText, error) {
 		Matrix:     NewMatrix(),
 		LineMatrix: NewMatrix(),
 	}
-	c.stack = append(c.stack, T_STATE)
+	c.stack = append(c.stack, t_STATE)
 	_, err := c.buf.Write([]byte("BT\n"))
 	if err != nil {
 		return nil, err
@@ -72,25 +60,13 @@ func (c *ContentStream) BeginText() (EndText, error) {
 	}, nil
 }
 
-func (c *ContentStream) et() error {
-	if c.TextObj == nil {
-		return fmt.Errorf("text object is already closed")
-	}
-	c.stack = c.stack[:len(c.stack)-1]
-	_, err := c.buf.Write([]byte("ET\n"))
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
 func (c *ContentStream) setRef(i int) { c.refnum = i }
 func (c *ContentStream) refNum() int  { return c.refnum }
-func (c *ContentStream) children() []Obj {
+func (c *ContentStream) children() []obj {
 	if c.ExtGState.Dict != nil {
-		return []Obj{&c.ExtGState}
+		return []obj{&c.ExtGState}
 	}
-	return []Obj{}
+	return []obj{}
 }
 func (c *ContentStream) encode(w io.Writer) (int, error) {
 	if c.buf.Len() > 1024 {
