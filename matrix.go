@@ -48,7 +48,7 @@ func ScaleBy(scaleX, scaleY float64) Matrix {
 		horizontal and vertical dimensions of the new coordinate system is the same size as sx and sy
 		units, respectively, in the previous coordinate system.
 	*/
-	return Mul(NewMatrix(), Matrix{scaleX, 0, 0, scaleX, 0, 0})
+	return Mul(NewMatrix(), Matrix{scaleX, 0, 0, scaleY, 0, 0})
 }
 
 // Returns a Matrix that represents the rotation of a coordinate space counter-clockwise about the origin by theta.

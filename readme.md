@@ -17,14 +17,14 @@ Transformation matrices are defined by 6 parameters representing the translation
 scale, and shear of the X and Y coordinates of a point transformed by the given matrix.
 Each matrix includes an implicit third column of [0, 0, 1]. Because the space of an object
 can be scaled or rotated, the effect of certain operations may be difficult to intuit. For example,
-if the Current Transformation Matrix were [[1 0 0][2 0 0][0 0 1]], to draw a line from (10, 10) to (10, 40) in "user space," you would need to first move the path cursor to (10, 5) in the default graphics space, and then draw and stroke a path to (10, 20), since the Current Transformation Matrix would scale the y-coordinates of the original space by two. This could be achieved through the following code:
+if the Current Transformation Matrix were [[1 0 0][2 0 0][0 0 1]], to draw a line from (10, 10) to (250, 250) in "user space," you would need to first move the path cursor to (10, 5) in the default graphics space, and then draw and stroke a path to (250, 125), since the Current Transformation Matrix would scale the y-coordinates of the original space by two. This could be achieved through the following code:
 ```go
     pdf := gdf.NewPDF() // create a new PDF instance
     page := gdf.NewPage(gdf.A4, gdf.MARGINS_NONE) // start a new page
     cs := page.NewContentStream() // content is drawn to a page's content stream
-    cs.Cm(gdf.ScaleBy(0, 2)) // concatenate an affine matrix representing a 2*y scaling to the Current Transformation Matrix (by default the identity matrix)
+    cs.Cm(gdf.ScaleBy(1, 2)) // concatenate an affine matrix representing a 2*y scaling to the Current Transformation Matrix (by default the identity matrix)
     cs.MoveTo(10, 5) // start a new path at (10, 5); this will be (10, 10) on the page
-    cs.LineTo(10, 20) // create a line to (10, 20), which will be (10, 40) on the page
+    cs.LineTo(250, 125) // create a line to (250, 125), which will be (250, 250) on the page
     cs.Stroke() // stroke the line so that it appears on the page
     gdf.AppendPage(pdf, &page) // add the page to the current PDF document
     f, err := os.Create("out.pdf")
