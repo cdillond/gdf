@@ -12,8 +12,8 @@ type Page struct {
 	MediaBox Rect
 	CropBox  Rect // "the rectangle of user space corresponding to the visible area of the intended output medium (display window or printed page)"
 	Content  []*ContentStream
-	resourceDict
 	Margins
+	resourceDict
 }
 type resourceDict struct {
 	Fonts     []*Font // *Fonts
@@ -31,30 +31,36 @@ type resourceDict struct {
 
 func NewPage(pageSize Rect, margins Margins) Page {
 	return Page{MediaBox: pageSize, CropBox: pageSize, Margins: margins}
-} // e.g. page := NewPage(pdf.DefaultPageSize)
-func AppendPage(pdf *PDF, page *Page) {
-	pdf.catalog.Pages.P = append(pdf.catalog.Pages.P, page)
 }
-func InsertPage(pdf *PDF, page *Page, i int) error {
-	if i < 0 || i > len(pdf.catalog.Pages.P) {
+
+// Appends page to p.
+func (p *PDF) AppendPage(page *Page) {
+	p.catalog.Pages.P = append(p.catalog.Pages.P, page)
+}
+
+// Inserts page at index i of the PDF's internal page structure.
+func (p *PDF) InsertPage(page *Page, i int) error {
+	if i < 0 || i > len(p.catalog.Pages.P) {
 		return errors.New("out of bounds")
 	}
-	if i == len(pdf.catalog.Pages.P) {
-		pdf.catalog.Pages.P = append(pdf.catalog.Pages.P, page)
+	if i == len(p.catalog.Pages.P) {
+		p.catalog.Pages.P = append(p.catalog.Pages.P, page)
 		return nil
 	}
-	dst := make([]*Page, len(pdf.catalog.Pages.P)+1)
-	copy(dst, pdf.catalog.Pages.P[:i])
+	dst := make([]*Page, len(p.catalog.Pages.P)+1)
+	copy(dst, p.catalog.Pages.P[:i])
 	dst[i] = page
-	copy(dst[i+1:], pdf.catalog.Pages.P[i:])
-	pdf.catalog.Pages.P = dst
+	copy(dst[i+1:], p.catalog.Pages.P[i:])
+	p.catalog.Pages.P = dst
 	return nil
 }
-func ReplacePage(pdf *PDF, page *Page, i int) error {
-	if i < 0 || i >= len(pdf.catalog.Pages.P) {
+
+// Replaces the page at index i of the PDF's internal page structure with page.
+func (p *PDF) ReplacePage(page *Page, i int) error {
+	if i < 0 || i >= len(p.catalog.Pages.P) {
 		return errors.New("out of bounds")
 	}
-	pdf.catalog.Pages.P[i] = page
+	p.catalog.Pages.P[i] = page
 	return nil
 }
 

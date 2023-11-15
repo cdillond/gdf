@@ -11,7 +11,7 @@ type ContentStream struct {
 	*GS
 	*TextObj
 	ExtGState
-	GSStack []*GS        // Graphics state stack
+	gSStack []*GS        // Graphics state stack
 	stack   []stackState // used for recording the order of calls to QSave/QRestore and BeginText/EndText
 	Parent  *Page
 	buf     *bytes.Buffer

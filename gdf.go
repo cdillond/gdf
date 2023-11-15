@@ -3,6 +3,8 @@ package gdf
 import (
 	"io"
 	"log"
+
+	"github.com/cdillond/gdf/ttf"
 )
 
 type PDF struct {
@@ -23,19 +25,20 @@ func buildPDFTree(pdf *PDF) {
 	includeChildren(pdf, obj(&(pdf.catalog)))
 }
 
-func WritePDF(pdf *PDF, w io.Writer) error {
-	buildPDFTree(pdf)
+// Builds the PDF and writes it to w.
+func (p *PDF) Write(w io.Writer) error {
+	buildPDFTree(p)
 
-	if err := writeHeader(pdf, w); err != nil {
+	if err := writeHeader(p, w); err != nil {
 		return err
 	}
-	if err := writeObjects(pdf, w); err != nil {
+	if err := writeObjects(p, w); err != nil {
 		return err
 	}
-	if err := writeXref(pdf, w); err != nil {
+	if err := writeXref(p, w); err != nil {
 		return err
 	}
-	if err := writeTrailer(pdf, w); err != nil {
+	if err := writeTrailer(p, w); err != nil {
 		return err
 	}
 	return nil
@@ -55,9 +58,16 @@ func includeChildren(pdf *PDF, o obj) {
 		if fnt, ok := child.(*Font); ok {
 			calculateWidths(fnt)
 			if !fnt.noSubset {
-				err := fnt.subset()
+				fnt.noSubset = true
+				tmp := make(map[rune]struct{}, len(fnt.Charset))
+				for key := range fnt.Charset {
+					tmp[key] = struct{}{}
+				}
+				b, err := ttf.Subset(fnt.Font, fnt.srcb, tmp)
 				if err != nil {
 					log.Println(err.Error())
+				} else {
+					fnt.source.buf.Write(b)
 				}
 			}
 		} /*

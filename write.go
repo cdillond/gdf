@@ -1,8 +1,10 @@
 package gdf
 
 import (
+	"crypto/md5"
 	"fmt"
 	"io"
+	"time"
 )
 
 func writeHeader(p *PDF, w io.Writer) error {
@@ -61,7 +63,9 @@ func writeTrailer(p *PDF, w io.Writer) error {
 	if err != nil {
 		return err
 	}
-	_, err = fmt.Fprintf(w, "<<\n/Size %d\n/Root 1 0 R\n>>\nstartxref\n%d\n%%%%EOF\n",
-		len(p.xref), p.xref[len(p.xref)-1])
+	h := md5.New()
+	id := h.Sum([]byte(fmt.Sprintf("%d", time.Now().Nanosecond())))
+	_, err = fmt.Fprintf(w, "<<\n/Size %d\n/ID [<%X> <%X>]\n/Root 1 0 R\n>>\nstartxref\n%d\n%%%%EOF\n",
+		len(p.xref), id, id, p.xref[len(p.xref)-1])
 	return err
 }

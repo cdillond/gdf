@@ -152,7 +152,7 @@ func (c *ContentStream) Re(x, y, w, h float64) {
 }
 
 // Append r to the current path; a possibly more convenient version of Re.
-func (c *ContentStream) Rect(r Rect) {
+func (c *ContentStream) Re2(r Rect) {
 	c.PathState = PATH_BUILDING
 	c.CurPt = Point{r.LLX, r.LLY}
 	fmt.Fprintf(c.buf, "%f %f %f %f re\n", r.LLX, r.LLY, r.URX-r.LLX, r.URY-r.LLY)

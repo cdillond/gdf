@@ -26,13 +26,13 @@ if the Current Transformation Matrix were [[1 0 0][2 0 0][0 0 1]], to draw a lin
     cs.MoveTo(10, 5) // start a new path at (10, 5); this will be (10, 10) on the page
     cs.LineTo(250, 125) // create a line to (250, 125), which will be (250, 250) on the page
     cs.Stroke() // stroke the line so that it appears on the page
-    gdf.AppendPage(pdf, &page) // add the page to the current PDF document
+    pdf.AppendPage(&page) // add the page to the current PDF document
     f, err := os.Create("out.pdf")
     if err != nil {
         panic(err)
     }
     defer f.Close()
-    gdf.WritePDF(pdf, f) // write the PDF to out.pdf
+    pdf.Write(f) // write the PDF to out.pdf
 
 ```
 

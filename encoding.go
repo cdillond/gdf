@@ -1,11 +1,12 @@
 package gdf
 
+/*
 import (
 	"golang.org/x/text/encoding"
 	"golang.org/x/text/encoding/charmap"
 )
 
-type Encoding uint
+type encoding uint
 
 const (
 	WIN_ANSI_ENCODING Encoding = iota
@@ -15,9 +16,6 @@ const (
 
 var encs = []string{"WinAnsiEncoding", "Symbolic", "MacRomanEncoding"}
 
-//	func toNameString(e Encoding) string {
-//		return encs[e]
-//	}
 func (e Encoding) String() string {
 	return encs[e]
 }
@@ -35,3 +33,4 @@ func toEncoder(e Encoding) *encoding.Encoder {
 		return charmap.Windows1252.NewEncoder()
 	}
 }
+*/

@@ -41,7 +41,7 @@ func CenterH(s ShapedRun, rect Rect, fs float64) float64 {
 	return dif / 2
 }
 
-// Returns the y offset, in points, from the start of rect, needed to center s vertically (based on the text's leading).
+// Returns the y offset, in points, from the start of rect, needed to center a line of text vertically (based on the text's leading).
 func CenterV(leading float64, rect Rect) float64 {
 	return -(rect.URY - rect.LLY - leading) / 2
 }

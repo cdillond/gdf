@@ -12,7 +12,8 @@ type Matrix struct {
 	F float64 // Y offset
 }
 
-// Empty/unitialized transformation matrices can result in undefined behavior.
+// Returns true if all editable fields of the matrix are set to 0. Empty matrices should be
+// avoided, as they can result in undefined behavior.
 func (m *Matrix) IsEmpty() bool {
 	return m.A == 0 && m.A == m.B && m.B == m.C && m.C == m.D && m.D == m.E && m.E == m.F
 }
@@ -29,7 +30,8 @@ func (m *Matrix) SetIdentity() {
 }
 
 // Returns a new instance of the Identity Matrix. This function should be used instead of Matrix{} or *new(Matrix),
-// since empty matrices can result in undefined behavior.
+// since empty matrices can result in undefined behavior. When combining transformations, the PDF spec's recommended
+// order of operations is translate, rotate, scale or skew.
 func NewMatrix() Matrix { return Matrix{1, 0, 0, 1, 0, 0} }
 
 // Returns a Matrix that represents the translation of a coordinate space by dX and dY.
@@ -108,5 +110,3 @@ func Mul(m1, m2 Matrix) Matrix {
 	//C22 := tm1.e*0 + tm1.f*0 + 1*1 = 1
 	return Matrix{A: C00, B: C01, C: C10, D: C11, E: C20, F: C21}
 }
-
-// order of operations: translate, rotate, scale or skew

@@ -4,7 +4,7 @@ import "math"
 
 const (
 	DEG float64 = math.Pi / 180 // 1 degree in radians
-	CM  float64 = 72 * 1 / 2.54 // 1 centimeter in points
+	CM  float64 = 72 / 2.54     // 1 centimeter in points
 	IN  float64 = 72            // 1 inch in points
 	MM  float64 = CM / 10       // 1 millimeter in points
 )
@@ -14,9 +14,12 @@ type Rect struct {
 }
 
 var (
-	A4        = Rect{0, 0, 210 * MM, 297 * MM}
-	US_LETTER = Rect{0, 0, 8.5 * IN, 11 * IN}
-	US_LEGAL  = Rect{0, 0, 8.5 * IN, 14 * IN}
+	A5         = Rect{0, 0, 148 * MM, 210 * MM}
+	A4         = Rect{0, 0, 210 * MM, 297 * MM}
+	A3         = Rect{0, 0, 297 * MM, 420 * MM}
+	US_LETTER  = Rect{0, 0, 8.5 * IN, 11 * IN}
+	US_LEGAL   = Rect{0, 0, 8.5 * IN, 14 * IN}
+	US_TABLOID = Rect{0, 0, 11 * IN, 17 * IN}
 )
 
 type Margins struct {
@@ -24,10 +27,11 @@ type Margins struct {
 }
 
 var (
-	MARGINS_NONE      = Margins{0, 0, 0, 0}
-	HALF_INCH_MARGINS = Margins{.5 * IN, .5 * IN, .5 * IN, .5 * IN}
-	ONE_INCH_MARGINS  = Margins{IN, IN, IN, IN}
-	ONE_CM_MARGINS    = Margins{CM, CM, CM, CM}
+	MARGINS_NONE    = Margins{0, 0, 0, 0}
+	MARGINS_HALF_IN = Margins{.5 * IN, .5 * IN, .5 * IN, .5 * IN}
+	MARGINS_1_IN    = Margins{IN, IN, IN, IN}
+	MARGINS_1_CM    = Margins{CM, CM, CM, CM}
+	MARGINS_5_PT    = Margins{5, 5, 5, 5}
 )
 
 // Converts n font units to points given a font size in points. For PDFs, ppem is always 1000.

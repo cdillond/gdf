@@ -47,7 +47,8 @@ func (c *ContentStream) SetColor(cl Color) {
 	}
 }
 
-type GColor float64 // must be in [0,1]
+// Grayscale color; must be in [0,1].
+type GColor float64
 
 const (
 	BLACK GColor = 0
@@ -57,8 +58,9 @@ const (
 
 func (g GColor) color() {}
 
+// RGB Color; R,G, and B must be in [0,1].
 type RGBColor struct {
-	R, G, B float64 // must be in [0,1]
+	R, G, B float64
 }
 
 func (r RGBColor) color() {}
@@ -69,8 +71,9 @@ var (
 	BLUE  = RGBColor{0, 0, 1}
 )
 
+// CMYK Color; C, M, Y, and K must be in [0,1].
 type CMYKColor struct {
-	C, M, Y, K float64 // must be in [0,1]
+	C, M, Y, K float64
 }
 
 func (c CMYKColor) color() {}

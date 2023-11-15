@@ -73,7 +73,7 @@ func NewGS() *GS {
 // QSave pushes the current GS (graphics sate) to c's GSStack (graphics state stack).
 func (c *ContentStream) QSave() {
 	g := c.GS
-	c.GSStack = append(c.GSStack, g)
+	c.gSStack = append(c.gSStack, g)
 	c.stack = append(c.stack, g_STATE)
 	c.buf.Write([]byte("q\n"))
 }
@@ -90,8 +90,8 @@ func (c *ContentStream) QRestore() error {
 		return fmt.Errorf("cannot interleave q/Q and BT/ET pairs")
 	}
 	c.stack = c.stack[:len(c.stack)-1]
-	c.GS = c.GSStack[len(c.GSStack)-1]
-	c.GSStack = c.GSStack[:len(c.GSStack)-1]
+	c.GS = c.gSStack[len(c.gSStack)-1]
+	c.gSStack = c.gSStack[:len(c.gSStack)-1]
 	c.buf.Write([]byte("Q\n"))
 	return nil
 }

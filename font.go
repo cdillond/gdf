@@ -66,7 +66,7 @@ func LoadTrueType(b []byte, flag FontFlag) (*Font, error) {
 }
 
 // Returns a *Font object, which can be used for drawing text to a ContentStream, and an error.
-func LoadTrueTypeFile(path string, flag FontFlag, encoding Encoding) (*Font, error) {
+func LoadTrueTypeFile(path string, flag FontFlag) (*Font, error) {
 	b, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
@@ -98,7 +98,6 @@ type SimpleFD struct {
 	FontFile     *resourceStream // Type1 fonts
 	FontFile2    *resourceStream // TrueType fonts
 	FontFile3    *resourceStream // Program defined by the Subtype entry in the stream dictionray
-	CharSet      string
 
 	refnum int
 }
