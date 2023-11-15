@@ -14,7 +14,7 @@ const (
 	FILTER_FLATE
 )
 
-func FlateCompress(w io.Writer, in *bytes.Buffer) (int, error) {
+func flateCompress(w io.Writer, in *bytes.Buffer) (int, error) {
 	zw := zlib.NewWriter(w)
 	n, err := in.WriteTo(zw)
 	if err != nil {

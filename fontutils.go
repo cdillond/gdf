@@ -8,7 +8,7 @@ import (
 
 func calculateWidths(f *Font) {
 	bs := make([]int, 256)
-	for char, adv := range f.charset {
+	for char, adv := range f.Charset {
 		b, err := f.enc.Bytes([]byte(string(char)))
 		if err == nil && len(b) == 1 {
 			bs[b[0]] = adv
@@ -32,23 +32,23 @@ func calculateWidths(f *Font) {
 
 // advance in font units
 func GlyphAdvance(r rune, f *Font) int {
-	adv, ok := f.charset[r]
+	adv, ok := f.Charset[r]
 	if ok {
 		return adv
 	}
 	gid, err := f.GlyphIndex(nil, r)
 	if err != nil || gid == 0 {
 		// try an encoded version instead
-		f.charset[r] = 0
+		f.Charset[r] = 0
 		return 0
 	}
 
 	adv26_6, err := f.GlyphAdvance(f.buf, gid, 1000, font.HintingNone)
 	if err != nil {
-		f.charset[r] = 0
+		f.Charset[r] = 0
 		return 0
 	}
-	f.charset[r] = int(adv26_6)
+	f.Charset[r] = int(adv26_6)
 	return int(adv26_6)
 }
 
@@ -132,3 +132,34 @@ func TextAscDesc(text []rune, f *Font) (float64, float64) {
 	}
 	return maxA, maxD
 }
+
+/*
+func CalculateWidths2(f *CIDType2Font) {
+	chars := make([]rune, 0, len(f.Charset))
+	for key := range f.Charset {
+		chars = append(chars, key)
+	}
+	sort.Slice(chars, func(i, j int) bool { return chars[i] < chars[j] })
+
+	all := []WidthArrayEntry{}
+	if len(chars) < 1 {
+		return
+	}
+	i := 1
+	latest := WidthArrayEntry{CID: int(chars[0]), Ws: []int{f.Charset[chars[0]]}}
+	for ; i < len(chars); i++ {
+		if chars[i] == chars[i-1]+1 {
+			w := append(latest.Ws, f.Charset[chars[i]])
+			latest.Ws = w
+		} else {
+			all = append(all, latest)
+			latest = WidthArrayEntry{CID: int(chars[i]), Ws: []int{f.Charset[chars[i]]}}
+		}
+		if i == len(chars)-1 {
+			all = append(all, latest)
+		}
+	}
+	f.W = all
+
+}
+*/

@@ -6,7 +6,7 @@ import (
 )
 
 type catalog struct {
-	Pages  *Pages
+	Pages  *pages
 	refnum int
 }
 

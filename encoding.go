@@ -15,7 +15,10 @@ const (
 
 var encs = []string{"WinAnsiEncoding", "Symbolic", "MacRomanEncoding"}
 
-func toNameString(e Encoding) string {
+//	func toNameString(e Encoding) string {
+//		return encs[e]
+//	}
+func (e Encoding) String() string {
 	return encs[e]
 }
 

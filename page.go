@@ -16,7 +16,7 @@ type Page struct {
 	Margins
 }
 type resourceDict struct {
-	Fonts     []*Font
+	Fonts     []*Font // *Fonts
 	ExtGState []*ExtGState
 	/*
 		TODO:
@@ -74,6 +74,7 @@ func (p *Page) children() []obj {
 	for i := range p.resourceDict.ExtGState {
 		out = append(out, p.resourceDict.ExtGState[i])
 	}
+
 	//for i := range p.ResourceDict.XObject {
 	//	obj := Obj(p.ResourceDict.XObject[i])
 	//	out = append(out, &obj)

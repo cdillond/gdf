@@ -12,6 +12,7 @@ type resourceStream struct {
 	Length int
 	buf    *bytes.Buffer
 	refnum int
+	ot     bool
 }
 
 func (r *resourceStream) setRef(i int)    { r.refnum = i }
@@ -23,14 +24,23 @@ func (r *resourceStream) encode(w io.Writer) (int, error) {
 	case FILTER_FLATE:
 		encbuf := new(bytes.Buffer)
 		l1 := r.buf.Len()
-		_, err := FlateCompress(encbuf, r.buf)
+		_, err := flateCompress(encbuf, r.buf)
 		if err != nil {
 			return 0, err
 		}
-		t, err := fmt.Fprintf(w, "<<\n/Filter /FlateDecode\n/Length1 %d\n/Length %d\n>>\nstream\n", l1, encbuf.Len())
-		if err != nil {
-			return t, err
+		var t int
+		if !r.ot {
+			t, err = fmt.Fprintf(w, "<<\n/Filter /FlateDecode\n/Length1 %d\n/Length %d\n>>\nstream\n", l1, encbuf.Len())
+			if err != nil {
+				return t, err
+			}
+		} else {
+			t, err = fmt.Fprintf(w, "<<\n/Filter /FlateDecode\n/Length1 %d\n/Length %d\n/Subtype /OpenType\n>>\nstream\n", l1, encbuf.Len())
+			if err != nil {
+				return t, err
+			}
 		}
+
 		encbuf.Write([]byte("\nendstream\n"))
 		t2, err := encbuf.WriteTo(w)
 		if err != nil {
@@ -49,7 +59,7 @@ func (r *resourceStream) encode(w io.Writer) (int, error) {
 			return n, err
 		}
 	}
-	t, err := w.Write([]byte(">>\nendstream\n"))
+	t, err := w.Write([]byte("\nendstream\n"))
 	if err != nil {
 		return n + t, err
 	}

@@ -24,6 +24,7 @@ type Margins struct {
 }
 
 var (
+	MARGINS_NONE      = Margins{0, 0, 0, 0}
 	HALF_INCH_MARGINS = Margins{.5 * IN, .5 * IN, .5 * IN, .5 * IN}
 	ONE_INCH_MARGINS  = Margins{IN, IN, IN, IN}
 	ONE_CM_MARGINS    = Margins{CM, CM, CM, CM}

@@ -14,7 +14,7 @@ type PDF struct {
 
 func NewPDF() *PDF {
 	pdf := new(PDF)
-	pdf.catalog.Pages = new(Pages)
+	pdf.catalog.Pages = new(pages)
 	return pdf
 }
 
@@ -60,7 +60,12 @@ func includeChildren(pdf *PDF, o obj) {
 					log.Println(err.Error())
 				}
 			}
-		}
+		} /*
+			if tfnt, ok := child.(*Type0Font); ok {
+				tfnt.Subset()
+				tfnt.GUnicode()
+				CalculateWidths2(tfnt.DescendantFonts)
+			}*/
 		includeObj(pdf, child)
 		includeChildren(pdf, child)
 	}

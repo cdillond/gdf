@@ -8,6 +8,7 @@ import (
 
 	"golang.org/x/image/font/sfnt"
 	"golang.org/x/text/encoding"
+	"golang.org/x/text/encoding/charmap"
 )
 
 type Font struct {
@@ -22,19 +23,18 @@ type Font struct {
 	LastChar  int
 	Widths    []int
 	Encoding  Name
-	charset   map[rune]int // maps a font's runes to their default glyph advances
+	Charset   map[rune]int // maps a font's runes to their default glyph advances
 	enc       *encoding.Encoder
 	source    *resourceStream
 	buf       *sfnt.Buffer
 	noSubset  bool // whether the font represents a subset
-}
-
-func (f *Font) SetFilter(filter Filter) {
-	f.source.Filter = filter
+	srcb      []byte
 }
 
 // Returns a *Font object, which can be used for drawing text to a ContentStream, and an error.
-func LoadTrueType(b []byte, flag FontFlag, encoding Encoding) (*Font, error) {
+func LoadTrueType(b []byte, flag FontFlag) (*Font, error) {
+	b2 := make([]byte, len(b))
+	copy(b2, b)
 	fnt, err := sfnt.Parse(b)
 	if err != nil {
 		return nil, err
@@ -42,19 +42,15 @@ func LoadTrueType(b []byte, flag FontFlag, encoding Encoding) (*Font, error) {
 	out := &Font{
 		Type:     Name("Font"),
 		Subtype:  Name("TrueType"),
-		Encoding: Name(toNameString(encoding)),
-		charset:  make(map[rune]int),
-		enc:      toEncoder(encoding),
+		Encoding: Name("WinAnsiEncoding"),
+		Charset:  make(map[rune]int),
+		enc:      charmap.Windows1252.NewEncoder(),
 		source: &resourceStream{
 			buf:    new(bytes.Buffer),
 			Filter: FILTER_FLATE,
 		},
-		buf: new(sfnt.Buffer),
-	}
-	if flag&NO_SUBSET != 0 {
-		out.noSubset = true
-		out.source.buf.Write(b)
-		flag ^= NO_SUBSET
+		buf:  new(sfnt.Buffer),
+		srcb: b2,
 	}
 	bf, err := fnt.Name(out.buf, sfnt.NameIDPostScript)
 	if err != nil {
@@ -75,7 +71,7 @@ func LoadTrueTypeFile(path string, flag FontFlag, encoding Encoding) (*Font, err
 	if err != nil {
 		return nil, err
 	}
-	return LoadTrueType(b, flag, encoding)
+	return LoadTrueType(b, flag)
 }
 
 type SimpleFD struct {
@@ -161,6 +157,15 @@ func (fd *SimpleFD) setRef(i int)    { fd.refnum = i }
 func (fd *SimpleFD) refNum() int     { return fd.refnum }
 func (fd *SimpleFD) children() []obj { return []obj{} } // no need to include FontFile2
 func (fd *SimpleFD) encode(w io.Writer) (int, error) {
-	return fmt.Fprintf(w, "<<\n/Type %s\n/FontName %s\n/Flags %d\n/FontBBox %v\n/ItalicAngle %d\n/Ascent %d\n/Descent %d\n/CapHeight %d\n/StemV %d\n/XHeight %d\n/FontFile2 %d 0 R\n>>\n",
-		fd.Type, fd.FontName, fd.Flags, fd.FontBBox, fd.ItalicAngle, fd.Ascent, fd.Descent, fd.CapHeight, fd.StemV, fd.XHeight, fd.FontFile2.refNum())
+	var vers int
+	var ref int
+	if fd.FontFile2 == nil {
+		vers = 3
+		ref = fd.FontFile3.refNum()
+	} else {
+		vers = 2
+		ref = fd.FontFile2.refNum()
+	}
+	return fmt.Fprintf(w, "<<\n/Type %s\n/FontName %s\n/Flags %d\n/FontBBox %v\n/ItalicAngle %d\n/Ascent %d\n/Descent %d\n/CapHeight %d\n/StemV %d\n/XHeight %d\n/FontFile%d %d 0 R\n>>\n",
+		fd.Type, fd.FontName, fd.Flags, fd.FontBBox, fd.ItalicAngle, fd.Ascent, fd.Descent, fd.CapHeight, fd.StemV, fd.XHeight, vers, ref)
 }

@@ -16,6 +16,7 @@ type ContentStream struct {
 	Parent  *Page
 	buf     *bytes.Buffer
 	refnum  int
+	//*Type0Font
 }
 
 type stackState uint8
@@ -51,6 +52,7 @@ func (c *ContentStream) BeginText() (EndText, error) {
 		if c.TextObj == nil {
 			return fmt.Errorf("text object is already closed")
 		}
+		c.TextObj = nil
 		c.stack = c.stack[:len(c.stack)-1]
 		_, err := c.buf.Write([]byte("ET\n"))
 		if err != nil {
@@ -77,7 +79,7 @@ func (c *ContentStream) encode(w io.Writer) (int, error) {
 	case FILTER_FLATE:
 		encbuf := new(bytes.Buffer)
 		l1 := c.buf.Len()
-		_, err := FlateCompress(encbuf, c.buf)
+		_, err := flateCompress(encbuf, c.buf)
 		if err != nil {
 			return 0, err
 		}
@@ -103,7 +105,7 @@ func (c *ContentStream) encode(w io.Writer) (int, error) {
 			return n, err
 		}
 	}
-	t, err := w.Write([]byte(">>\nendstream\n"))
+	t, err := w.Write([]byte("endstream\n"))
 	if err != nil {
 		return n + t, err
 	}

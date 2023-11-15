@@ -5,21 +5,21 @@ import (
 	"io"
 )
 
-type Pages struct {
+type pages struct {
 	P      []*Page
 	refnum int
 }
 
-func (p *Pages) refNum() int { return p.refnum }
-func (p *Pages) children() []obj {
+func (p *pages) refNum() int { return p.refnum }
+func (p *pages) children() []obj {
 	out := make([]obj, 0, len(p.P))
 	for _, page := range p.P {
 		out = append(out, page)
 	}
 	return out
 }
-func (p *Pages) setRef(i int) { p.refnum = i }
-func (p *Pages) encode(w io.Writer) (int, error) {
+func (p *pages) setRef(i int) { p.refnum = i }
+func (p *pages) encode(w io.Writer) (int, error) {
 	kids := make([]string, len(p.P))
 	for i := range p.P {
 		kids[i] = fmt.Sprintf("%d 0 R", p.P[i].refNum())
