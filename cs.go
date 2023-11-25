@@ -22,8 +22,8 @@ type ContentStream struct {
 type stackState uint8
 
 const (
-	g_STATE stackState = iota
-	t_STATE
+	gState stackState = iota
+	tState
 )
 
 type EndText func() error
@@ -43,7 +43,7 @@ func (c *ContentStream) BeginText() (EndText, error) {
 		Matrix:     NewMatrix(),
 		LineMatrix: NewMatrix(),
 	}
-	c.stack = append(c.stack, t_STATE)
+	c.stack = append(c.stack, tState)
 	_, err := c.buf.Write([]byte("BT\n"))
 	if err != nil {
 		return nil, err
@@ -71,12 +71,12 @@ func (c *ContentStream) children() []obj {
 	return []obj{}
 }
 func (c *ContentStream) encode(w io.Writer) (int, error) {
-	if c.buf.Len() > 1024 {
-		c.Filter = FILTER_FLATE
+	if c.buf.Len() > 1<<32 {
+		c.Filter = Flate
 	}
 	var n int
 	switch c.Filter {
-	case FILTER_FLATE:
+	case Flate:
 		encbuf := new(bytes.Buffer)
 		l1 := c.buf.Len()
 		_, err := flateCompress(encbuf, c.buf)

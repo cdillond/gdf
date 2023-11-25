@@ -47,7 +47,7 @@ func LoadTrueType(b []byte, flag FontFlag) (*Font, error) {
 		enc:      charmap.Windows1252.NewEncoder(),
 		source: &resourceStream{
 			buf:    new(bytes.Buffer),
-			Filter: FILTER_FLATE,
+			Filter: Flate,
 		},
 		buf:  new(sfnt.Buffer),
 		srcb: b2,
@@ -125,17 +125,17 @@ func NewSimpleFD(fnt *sfnt.Font, flag FontFlag, buf *sfnt.Buffer) *SimpleFD {
 type FontFlag uint32
 
 const (
-	FIXED_PITCH FontFlag = 1 << 0
-	SERIF       FontFlag = 1 << 1
-	SYMBOLIC    FontFlag = 1 << 2 // Must be set when NONSYMBOLIC is not set and vice versa.
-	SCRIPT      FontFlag = 1 << 3
-	NONSYMBOLIC FontFlag = 1 << 5 // Must be set when SYMBOLIC is not set and vice versa.
-	ITALIC      FontFlag = 1 << 6
-	ALL_CAP     FontFlag = 1 << 16
-	SMALL_CAP   FontFlag = 1 << 17
-	FORCE_BOLD  FontFlag = 1 << 18
+	FixedPitch  FontFlag = 1 << 0
+	Serif       FontFlag = 1 << 1
+	Symbolic    FontFlag = 1 << 2 // Must be set when NONSYMBOLIC is not set and vice versa.
+	Script      FontFlag = 1 << 3
+	Nonsymbolic FontFlag = 1 << 5 // Must be set when SYMBOLIC is not set and vice versa.
+	Italic      FontFlag = 1 << 6
+	AllCap      FontFlag = 1 << 16
+	SmallCap    FontFlag = 1 << 17
+	ForceBold   FontFlag = 1 << 18
 
-	NO_SUBSET FontFlag = 1 << 19 // Prevent gdf from subsetting a font. Not in the PDF spec.
+	NoSubset FontFlag = 1 << 19 // Prevent gdf from subsetting a font. Not in the PDF spec.
 )
 
 func (f *Font) setRef(i int) { f.refnum = i }

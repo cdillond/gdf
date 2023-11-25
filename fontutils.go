@@ -81,6 +81,19 @@ func fontBBox(font *sfnt.Font, buf *sfnt.Buffer) (fixed.Rectangle26_6, error) {
 	return bbox, nil
 }
 
+// does not account for horizontal stretch state
+func lineExt(txt []rune, kerns []int, adj float64, f *Font) float64 {
+	var ext int
+	var spExt float64
+	for i, r := range txt {
+		ext += GlyphAdvance(r, f) + kerns[i]
+		if r == ' ' {
+			spExt += adj
+		}
+	}
+	return float64(ext) + spExt
+}
+
 // Returns the extent of an unshaped text run in font units
 func TextExtent(s string, f *Font) float64 {
 	var ext int

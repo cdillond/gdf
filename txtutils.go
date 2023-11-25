@@ -7,7 +7,7 @@ type ShapedRun struct {
 	FUExt float64
 }
 
-// Returns the extent of the text in points.
+// Retns the extent of the text in points.
 func (s ShapedRun) Extent(fs float64) float64 {
 	return FUToPt(s.FUExt, fs)
 }

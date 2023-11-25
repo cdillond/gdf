@@ -5,10 +5,10 @@ import "fmt"
 type ColorSpace Name
 
 const (
-	DEVICE_GRAY ColorSpace = "DeviceGray"
-	DEVICE_RGB  ColorSpace = "DeviceRGB"
-	DEVICE_CMYK ColorSpace = "DeviceCMYK"
-	PATTERN     ColorSpace = "Pattern"
+	DeviceGray ColorSpace = "DeviceGray"
+	DeviceRGB  ColorSpace = "DeviceRGB"
+	DeviceCMYK ColorSpace = "DeviceCMYK"
+	Pattern    ColorSpace = "Pattern"
 )
 
 type Color interface {
@@ -20,13 +20,13 @@ func (c *ContentStream) SetColorStroke(cl Color) {
 	c.SColor = cl
 	switch v := cl.(type) {
 	case GColor:
-		c.SColorSpace = DEVICE_GRAY
+		c.SColorSpace = DeviceGray
 		fmt.Fprintf(c.buf, "%f G\n", v)
 	case RGBColor:
-		c.SColorSpace = DEVICE_RGB
+		c.SColorSpace = DeviceRGB
 		fmt.Fprintf(c.buf, "%f %f %f RG\n", v.R, v.G, v.B)
 	case CMYKColor:
-		c.SColorSpace = DEVICE_CMYK
+		c.SColorSpace = DeviceCMYK
 		fmt.Fprintf(c.buf, "%f %f %f %f K\n", v.C, v.M, v.Y, v.K)
 	}
 }
@@ -36,13 +36,13 @@ func (c *ContentStream) SetColor(cl Color) {
 	c.NColor = cl
 	switch v := cl.(type) {
 	case GColor:
-		c.NColorSpace = DEVICE_GRAY
+		c.NColorSpace = DeviceGray
 		fmt.Fprintf(c.buf, "%f g\n", v)
 	case RGBColor:
-		c.NColorSpace = DEVICE_RGB
+		c.NColorSpace = DeviceRGB
 		fmt.Fprintf(c.buf, "%f %f %f rg\n", v.R, v.G, v.B)
 	case CMYKColor:
-		c.NColorSpace = DEVICE_CMYK
+		c.NColorSpace = DeviceCMYK
 		fmt.Fprintf(c.buf, "%f %f %f %f k\n", v.C, v.M, v.Y, v.K)
 	}
 }

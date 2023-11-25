@@ -37,17 +37,17 @@ type GS struct {
 type LineCap uint
 
 const (
-	BUTT_CAP LineCap = iota
-	ROUND_CAP
-	SQUARE_CAP
+	ButtCap LineCap = iota
+	RoundCap
+	SquareCap
 )
 
 type LineJoin uint
 
 const (
-	MITER_JOIN LineJoin = iota
-	ROUND_JOIN
-	BEVEL_JOIN
+	MiterJoin LineJoin = iota
+	RoundJoin
+	BevelJoin
 )
 
 type DashPattern struct {
@@ -58,9 +58,9 @@ type DashPattern struct {
 type PathState uint
 
 const (
-	PATH_NONE PathState = iota
-	PATH_BUILDING
-	PATH_CLIPPING
+	NoPath PathState = iota
+	Building
+	Clipping
 )
 
 func NewGS() *GS {
@@ -74,7 +74,7 @@ func NewGS() *GS {
 func (c *ContentStream) QSave() {
 	g := c.GS
 	c.gSStack = append(c.gSStack, g)
-	c.stack = append(c.stack, g_STATE)
+	c.stack = append(c.stack, gState)
 	c.buf.Write([]byte("q\n"))
 }
 
@@ -86,7 +86,7 @@ func (c *ContentStream) QRestore() error {
 	if len(c.stack) == 0 {
 		return fmt.Errorf("current GSStack is empty")
 	}
-	if c.stack[len(c.stack)-1] != g_STATE {
+	if c.stack[len(c.stack)-1] != gState {
 		return fmt.Errorf("cannot interleave q/Q and BT/ET pairs")
 	}
 	c.stack = c.stack[:len(c.stack)-1]
@@ -97,7 +97,7 @@ func (c *ContentStream) QRestore() error {
 }
 
 // Sets c's Current Transformation Matrix (c.GS.Matrix) to the matrix product of m and c.GS.Matrix.
-func (c *ContentStream) Cm(m Matrix) {
+func (c *ContentStream) Concat(m Matrix) {
 	c.GS.Matrix = Mul(c.GS.Matrix, m)
 	fmt.Fprintf(c.buf, "%f %f %f %f %f %f cm\n", m.A, m.B, m.C, m.D, m.E, m.F)
 }

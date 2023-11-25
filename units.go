@@ -20,6 +20,13 @@ var (
 	US_LETTER  = Rect{0, 0, 8.5 * IN, 11 * IN}
 	US_LEGAL   = Rect{0, 0, 8.5 * IN, 14 * IN}
 	US_TABLOID = Rect{0, 0, 11 * IN, 17 * IN}
+
+	A5_LS         = Rect{0, 0, 210 * MM, 148 * MM}
+	A4_LS         = Rect{0, 0, 297 * MM, 210 * MM}
+	A3_LS         = Rect{0, 0, 420 * MM, 297 * MM}
+	US_LETTER_LS  = Rect{0, 0, 11 * IN, 8.5 * IN}
+	US_LEGAL_LS   = Rect{0, 0, 14 * IN, 8.5 * IN}
+	US_TABLOID_LS = Rect{0, 0, 17 * IN, 11 * IN}
 )
 
 type Margins struct {

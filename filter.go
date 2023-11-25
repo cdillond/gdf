@@ -9,9 +9,8 @@ import (
 type Filter uint
 
 const (
-	FILTER_NONE Filter = iota
-	FILTER_LZW
-	FILTER_FLATE
+	NoFilter Filter = iota
+	Flate
 )
 
 func flateCompress(w io.Writer, in *bytes.Buffer) (int, error) {

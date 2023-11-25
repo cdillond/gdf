@@ -26,22 +26,21 @@ func buildPDFTree(pdf *PDF) {
 }
 
 // Builds the PDF and writes it to w.
-func (p *PDF) Write(w io.Writer) error {
+func (p *PDF) WriteTo(w io.Writer) (int64, error) {
 	buildPDFTree(p)
-
 	if err := writeHeader(p, w); err != nil {
-		return err
+		return int64(p.n), err
 	}
 	if err := writeObjects(p, w); err != nil {
-		return err
+		return int64(p.n), err
 	}
 	if err := writeXref(p, w); err != nil {
-		return err
+		return int64(p.n), err
 	}
 	if err := writeTrailer(p, w); err != nil {
-		return err
+		return int64(p.n), err
 	}
-	return nil
+	return int64(p.n), nil
 }
 
 func includeObj(pdf *PDF, o obj) {

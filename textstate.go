@@ -18,14 +18,14 @@ type TextState struct {
 type RenderMode uint
 
 const (
-	TR_FILL RenderMode = iota
-	TR_STROKE
-	TR_FILL_STROKE
-	TR_INVISIBLE
-	TR_FILL_ADD_PATH
-	TR_STROKE_ADD_PATH
-	TR_FILL_STROKE_ADD_PATH
-	TR_ADD_PATH
+	FillText RenderMode = iota
+	StrokeText
+	FillStrokeText
+	Invisible
+	FillTextAddPath
+	StrokeTextAddPath
+	FillStrokeTextAddPath
+	AddTextPath
 )
 
 // Sets the content stream's character spacing (c.TextState.CharSpace) f.

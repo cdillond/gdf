@@ -59,13 +59,15 @@ func writeXref(p *PDF, w io.Writer) error {
 }
 
 func writeTrailer(p *PDF, w io.Writer) error {
-	_, err := w.Write([]byte("trailer\n"))
+	t, err := w.Write([]byte("trailer\n"))
 	if err != nil {
 		return err
 	}
+	p.n += t
 	h := md5.New()
 	id := h.Sum([]byte(fmt.Sprintf("%d", time.Now().Nanosecond())))
-	_, err = fmt.Fprintf(w, "<<\n/Size %d\n/ID [<%X> <%X>]\n/Root 1 0 R\n>>\nstartxref\n%d\n%%%%EOF\n",
+	t, err = fmt.Fprintf(w, "<<\n/Size %d\n/ID [<%X> <%X>]\n/Root 1 0 R\n>>\nstartxref\n%d\n%%%%EOF\n",
 		len(p.xref), id, id, p.xref[len(p.xref)-1])
+	p.n += t
 	return err
 }

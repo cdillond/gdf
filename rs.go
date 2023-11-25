@@ -21,7 +21,7 @@ func (r *resourceStream) children() []obj { return []obj{} }
 func (r *resourceStream) encode(w io.Writer) (int, error) {
 	var n int
 	switch r.Filter {
-	case FILTER_FLATE:
+	case Flate:
 		encbuf := new(bytes.Buffer)
 		l1 := r.buf.Len()
 		_, err := flateCompress(encbuf, r.buf)

@@ -10,15 +10,27 @@ import (
 	"golang.org/x/image/font/sfnt"
 )
 
-var pdfTables = []uint{
+type TableTag uint32
+
+const (
+	TAG_cmap TableTag = 'c'<<24 | 'm'<<16 | 'a'<<8 | 'p'
+	TAG_glyf TableTag = 'g'<<24 | 'l'<<16 | 'y'<<8 | 'f'
+	TAG_head TableTag = 'h'<<24 | 'e'<<16 | 'a'<<8 | 'd'
+	TAG_hhea TableTag = 'h'<<24 | 'h'<<16 | 'e'<<8 | 'a'
+	TAG_hmtx TableTag = 'h'<<24 | 'm'<<16 | 't'<<8 | 'x'
+	TAG_loca TableTag = 'l'<<24 | 'o'<<16 | 'c'<<8 | 'a'
+	TAG_maxp TableTag = 'm'<<24 | 'a'<<16 | 'x'<<8 | 'p'
+)
+
+var pdfTables = []TableTag{
 	//1330851634, // OS/2
-	1668112752, // cmap
-	1735162214, // glyf
-	1751474532, // head
-	1751672161, // hhea
-	1752003704, // hmtx
-	1819239265, // loca
-	1835104368, // maxp
+	TAG_cmap, // cmap
+	TAG_glyf, // glyf
+	TAG_head, // head
+	TAG_hhea, // hhea
+	TAG_hmtx, // hmtx
+	TAG_loca, // loca
+	TAG_maxp, // maxp
 	//1851878757, // name
 	//1886352244, // post
 }
@@ -50,7 +62,7 @@ func Subset(f *sfnt.Font, src []byte, cutset map[rune]struct{}) ([]byte, error) 
 		return *new([]byte), err
 	}
 
-	head, err := ld.RawTable(1751474532)
+	head, err := ld.RawTable(loader.Tag(TAG_head))
 	if err != nil {
 		return *new([]byte), err
 	}
@@ -60,7 +72,7 @@ func Subset(f *sfnt.Font, src []byte, cutset map[rune]struct{}) ([]byte, error) 
 	}
 	isLong := headP.IndexToLocFormat == 1
 
-	loca, err := ld.RawTable(1819239265)
+	loca, err := ld.RawTable(loader.Tag(TAG_loca))
 	if err != nil {
 		return *new([]byte), err
 	}
@@ -69,7 +81,7 @@ func Subset(f *sfnt.Font, src []byte, cutset map[rune]struct{}) ([]byte, error) 
 		return *new([]byte), err
 	}
 
-	glyf, err := ld.RawTable(1735162214)
+	glyf, err := ld.RawTable(loader.Tag(TAG_glyf))
 	if err != nil {
 		return *new([]byte), err
 	}
