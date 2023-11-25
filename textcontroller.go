@@ -26,6 +26,7 @@ type TextController struct {
 	scolor, ncolor   Color
 	r                RenderMode
 	n                int // token index
+	ln               int // line index
 }
 
 type ControllerCfg struct {
@@ -147,15 +148,15 @@ func NewTextController(src FormatText, lineWidth float64, f FontFamily, cfg Cont
 	return tc, nil
 }
 
-func (tc *TextController) DrawText(c *ContentStream, area Rect) error {
+func (tc *TextController) DrawText(c *ContentStream, area Rect) (error, bool) {
 	if PtToFU(area.Width(), tc.fontSize) < tc.lineWidth {
-		return fmt.Errorf("target area must be at least as wide as the max line width")
+		return fmt.Errorf("target area must be at least as wide as the max line width"), false
 	}
 	if tc.n >= len(tc.tokens) {
-		return fmt.Errorf("src text buffer is empty")
+		return fmt.Errorf("src text buffer is empty"), false
 	}
 	if tc.leading <= 0 {
-		return fmt.Errorf("font leading must be greater than 0")
+		return fmt.Errorf("font leading must be greater than 0"), false
 	}
 	maxLines := area.Height() / tc.leading
 	c.QSave()
@@ -178,19 +179,19 @@ func (tc *TextController) DrawText(c *ContentStream, area Rect) error {
 	c.Td(area.LLX, area.URY-tc.leading)
 	if err != nil {
 		c.QRestore()
-		return err
+		return err, false
 	}
-	tc.writeLines(c, int(maxLines))
+	tc.writeLines(c, min(int(maxLines), len(tc.breakpoints)))
 	err = et()
 	if err != nil {
 		c.QRestore()
-		return err
+		return err, false
 	}
 	err = c.QRestore()
 	if err != nil {
-		return err
+		return err, false
 	}
-	return nil
+	return nil, tc.n == len(tc.tokens)
 }
 
 type token interface {
@@ -339,10 +340,10 @@ func (tc *TextController) tokenize(src FormatText) []token {
 			if isBold && isItal {
 				curFont = tc.f.Ital
 				out = append(out, ital)
-			} else if tc.isBold {
+			} else if isBold {
 				curFont = tc.f.Regular
 				out = append(out, regular)
-			} else if tc.isItal {
+			} else if isItal {
 				curFont = tc.f.BoldItal
 				out = append(out, boldItal)
 			} else {
@@ -538,7 +539,7 @@ func (tc *TextController) breakLines(squishTolerance, stretchTolerance float64) 
 // the run needs to be considered in absence of the formatting directives, but then it needs to be reconstituted with those
 // directives in mind
 func (tc *TextController) writeLines(c *ContentStream, numLines int) {
-	var lineCount int
+	lineCount := tc.ln
 	breaks := map[int]struct{}{}
 	for _, ind := range tc.breakpoints {
 		breaks[ind] = struct{}{}
@@ -546,15 +547,13 @@ func (tc *TextController) writeLines(c *ContentStream, numLines int) {
 
 	run := []rune{}
 	kerns := []int{}
-	indented := tc.firstIndent != 0
+	indented := tc.firstIndent != 0 && tc.n == 0
 	if indented {
 		c.Concat(Translate(FUToPt(tc.firstIndent, tc.fontSize), 0))
 	}
 	i := tc.n
-	for ; i < len(tc.tokens); i++ {
+	for ; i < len(tc.tokens) && lineCount < len(tc.breakpoints); i++ {
 		if _, ok := breaks[i]; ok {
-
-			// right now only do this for ragged
 			var dif float64
 			var alignAdj float64
 			if tc.adjs[lineCount] == 0 && (tc.a == Center || tc.a == Left) {
@@ -582,7 +581,8 @@ func (tc *TextController) writeLines(c *ContentStream, numLines int) {
 			run = run[:0]
 			kerns = kerns[:0]
 			if lineCount == numLines {
-				tc.n = i
+				tc.n = i + 1
+				tc.ln = lineCount
 				return
 			}
 			continue
@@ -657,4 +657,5 @@ func (tc *TextController) writeLines(c *ContentStream, numLines int) {
 		}
 	}
 	tc.n = i
+	tc.ln = lineCount
 }
