@@ -20,7 +20,7 @@ can be scaled or rotated, the effect of certain operations may be difficult to i
 if the Current Transformation Matrix were [[1 0 0][2 0 0][0 0 1]], to draw a line from (10, 10) to (250, 250) in "user space," you would need to first move the path cursor to (10, 5) in the default graphics space, and then draw and stroke a path to (250, 125), since the Current Transformation Matrix would scale the y-coordinates of the original space by two. This could be achieved through the following code:
 ```go
     pdf := gdf.NewPDF() // create a new PDF instance
-    page := gdf.NewPage(gdf.A4, gdf.MARGINS_NONE) // start a new page
+    page := gdf.NewPage(gdf.A4, gdf.NoMargins) // start a new page
     cs := page.NewContentStream() // content is drawn to a page's content stream
     cs.Concat(gdf.ScaleBy(1, 2)) // concatenate an affine matrix representing a 2*y scaling to the Current Transformation Matrix (by default the identity matrix)
     cs.MoveTo(10, 5) // start a new path at (10, 5); this will be (10, 10) on the page
