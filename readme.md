@@ -22,7 +22,7 @@ if the Current Transformation Matrix were [[1 0 0][2 0 0][0 0 1]], to draw a lin
     pdf := gdf.NewPDF() // create a new PDF instance
     page := gdf.NewPage(gdf.A4, gdf.MARGINS_NONE) // start a new page
     cs := page.NewContentStream() // content is drawn to a page's content stream
-    cs.Cm(gdf.ScaleBy(1, 2)) // concatenate an affine matrix representing a 2*y scaling to the Current Transformation Matrix (by default the identity matrix)
+    cs.Concat(gdf.ScaleBy(1, 2)) // concatenate an affine matrix representing a 2*y scaling to the Current Transformation Matrix (by default the identity matrix)
     cs.MoveTo(10, 5) // start a new path at (10, 5); this will be (10, 10) on the page
     cs.LineTo(250, 125) // create a line to (250, 125), which will be (250, 250) on the page
     cs.Stroke() // stroke the line so that it appears on the page
