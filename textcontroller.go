@@ -79,7 +79,7 @@ const (
 
 /*
 FormatText represents a slice of runes that can specify the formatting and content of the source text. FormatText
-is a slice of runes that can contain special formatting directives. The KController applies the following rules
+is a slice of runes that can contain special formatting directives. The TextController applies the following rules
 to these special characters:
  1. \x03 (U+0003) is interpreted as end of text. Any runes that appear after this character will not be parsed.
  2. \x07 (U+0007) is interpreted as a color indicator. This character must be followed by three comma-separated 3-digit integers in [0,255]
@@ -567,12 +567,18 @@ func (tc *TextController) writeLines(c *ContentStream, numLines int) {
 				c.Concat(Translate(FUToPt(alignAdj, tc.fontSize), 0))
 			}
 			if len(run) != 0 {
-				c.TJSpace(run, kerns, tc.adjs[lineCount])
+				if tc.adjs[lineCount] != 0 {
+					c.TWordSpace(FUToPt(tc.adjs[lineCount], c.FontSize))
+					c.TJ(run, kerns)
+					c.TWordSpace(0)
+				} else {
+					c.TJ(run, kerns)
+				}
 			}
 			if dif != 0 {
 				c.Concat(Translate(-FUToPt(alignAdj, tc.fontSize), 0))
 			}
-			c.TStar()
+			c.TNextLine()
 			if indented {
 				c.Concat(Translate(-FUToPt(tc.firstIndent, tc.fontSize), 0))
 				indented = false
@@ -605,7 +611,14 @@ func (tc *TextController) writeLines(c *ContentStream, numLines int) {
 					}
 					c.Concat(Translate(FUToPt(alignAdj, tc.fontSize), 0))
 				}
-				c.TJSpace(run, kerns, tc.adjs[lineCount])
+				if tc.adjs[lineCount] != 0 {
+					c.TWordSpace(FUToPt(tc.adjs[lineCount], c.FontSize))
+					c.TJ(run, kerns)
+					c.TWordSpace(0)
+				} else {
+					c.TJ(run, kerns)
+				}
+
 				if dif != 0 {
 					c.Concat(Translate(-FUToPt(alignAdj, tc.fontSize), 0))
 				}
@@ -636,7 +649,14 @@ func (tc *TextController) writeLines(c *ContentStream, numLines int) {
 					}
 					c.Concat(Translate(FUToPt(alignAdj, tc.fontSize), 0))
 				}
-				c.TJSpace(run, kerns, tc.adjs[lineCount])
+				if tc.adjs[lineCount] != 0 {
+					c.TWordSpace(FUToPt(tc.adjs[lineCount], c.FontSize))
+					c.TJ(run, kerns)
+					c.TWordSpace(0)
+				} else {
+					c.TJ(run, kerns)
+				}
+
 				if dif != 0 {
 					c.Concat(Translate(-FUToPt(alignAdj, tc.fontSize), 0))
 				}

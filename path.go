@@ -14,8 +14,9 @@ func (c *ContentStream) LineTo(x, y float64) {
 	fmt.Fprintf(c.buf, "%f %f l\n", x, y)
 }
 
-// Append a cubic Bézier curve to the current path; c.
-func (c *ContentStream) C(x1, y1, x2, y2, x3, y3 float64) {
+// Append a cubic Bézier curve to the current path; c. The curve extends
+// from the current point to (x3, y3) using using (x1, y1) and (x2, y2) as the Bézier control points.
+func (c *ContentStream) CubicBezier1(x1, y1, x2, y2, x3, y3 float64) {
 	switch c.PathState {
 	case NoPath, Clipping:
 		return
@@ -24,8 +25,9 @@ func (c *ContentStream) C(x1, y1, x2, y2, x3, y3 float64) {
 	}
 }
 
-// Append a cubic Bézier curve to the current path; v.
-func (c *ContentStream) V(x2, y2, x3, y3 float64) {
+// Append a cubic Bézier curve to the current path; v. The curve extends from
+// the current point to (x3, y3), using the current point and (x2, y2) as the Bezier control points.
+func (c *ContentStream) CubicBezier2(x2, y2, x3, y3 float64) {
 	switch c.PathState {
 	case NoPath, Clipping:
 		return
@@ -34,8 +36,9 @@ func (c *ContentStream) V(x2, y2, x3, y3 float64) {
 	}
 }
 
-// Append a cubic Bézier curve to the current path; y.
-func (c *ContentStream) Y(x1, y1, x3, y3 float64) {
+// Append a cubic Bézier curve to the current path; y. The curve extends
+// from the current point to (x3, y3), using (x1, y1) and (x3, y3) as the Bézier control points
+func (c *ContentStream) CubicBezier3(x1, y1, x3, y3 float64) {
 	switch c.PathState {
 	case NoPath, Clipping:
 		return

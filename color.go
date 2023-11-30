@@ -12,7 +12,7 @@ const (
 )
 
 type Color interface {
-	color()
+	color() // this is required here to prevent user-defined color types, but it isn't actually used
 }
 
 // Sets c's stroking color (SColor) to cl and sets its SColorSpace to cl's ColorSpace.
@@ -51,9 +51,9 @@ func (c *ContentStream) SetColor(cl Color) {
 type GColor float64
 
 const (
-	BLACK GColor = 0
-	WHITE GColor = 1
-	GRAY  GColor = .5
+	Black GColor = 0
+	White GColor = 1
+	Gray  GColor = .5
 )
 
 func (g GColor) color() {}
@@ -66,9 +66,9 @@ type RGBColor struct {
 func (r RGBColor) color() {}
 
 var (
-	RED   = RGBColor{1, 0, 0}
-	GREEN = RGBColor{0, 1, 0}
-	BLUE  = RGBColor{0, 0, 1}
+	Red   = RGBColor{1, 0, 0}
+	Green = RGBColor{0, 1, 0}
+	Blue  = RGBColor{0, 0, 1}
 )
 
 // CMYK Color; C, M, Y, and K must be in [0,1].
@@ -79,8 +79,8 @@ type CMYKColor struct {
 func (c CMYKColor) color() {}
 
 var (
-	CYAN       = CMYKColor{1, 0, 0, 0}
-	MAGENTA    = CMYKColor{0, 1, 0, 0}
-	YELLOW     = CMYKColor{0, 0, 1, 0}
-	CMYK_BLACK = CMYKColor{0, 0, 0, 1}
+	Cyan      = CMYKColor{1, 0, 0, 0}
+	Magenta   = CMYKColor{0, 1, 0, 0}
+	Yellow    = CMYKColor{0, 0, 1, 0}
+	CMYKBlack = CMYKColor{0, 0, 0, 1}
 )

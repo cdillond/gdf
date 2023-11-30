@@ -127,9 +127,9 @@ type FontFlag uint32
 const (
 	FixedPitch  FontFlag = 1 << 0
 	Serif       FontFlag = 1 << 1
-	Symbolic    FontFlag = 1 << 2 // Must be set when NONSYMBOLIC is not set and vice versa.
+	Symbolic    FontFlag = 1 << 2 // Must be set when Nonsymbolic is not set and vice versa.
 	Script      FontFlag = 1 << 3
-	Nonsymbolic FontFlag = 1 << 5 // Must be set when SYMBOLIC is not set and vice versa.
+	Nonsymbolic FontFlag = 1 << 5 // Must be set when Symbolic is not set and vice versa.
 	Italic      FontFlag = 1 << 6
 	AllCap      FontFlag = 1 << 16
 	SmallCap    FontFlag = 1 << 17

@@ -2,7 +2,6 @@ package gdf
 
 import (
 	"fmt"
-	"strings"
 )
 
 type TextObj struct {
@@ -19,25 +18,6 @@ func (c *ContentStream) RawTextCursor() Point {
 func (c *ContentStream) TextCursor() Point {
 	p := Transform(Point{0, 0}, c.TextObj.Matrix)
 	return Transform(p, c.GS.Matrix)
-}
-
-func (c *ContentStream) TextExtentPts(s string) float64 {
-	extFU := TextExtent(s, c.Font)
-	extFU += float64(len(s)) * c.CharSpace
-	extFU += float64(strings.Count(s, "\u0020")) * c.WordSpace
-	return FUToPt(extFU*c.Scale/100, c.FontSize)
-}
-func (c *ContentStream) ShapedTextExtentPts(s string) float64 {
-	extFU := ShapedTextExtent([]rune(s), c.Font)
-	extFU += float64(len(s)) * c.CharSpace
-	extFU += float64(strings.Count(s, "\u0020")) * c.WordSpace
-	return FUToPt(extFU*c.Scale/100, c.FontSize)
-}
-func (c *ContentStream) UnscaledTextExtentPts(s string) float64 {
-	extFU := TextExtent(s, c.Font)
-	extFU += float64(len(s)) * c.CharSpace
-	extFU += float64(strings.Count(s, "\u0020")) * c.WordSpace
-	return FUToPt(extFU, c.FontSize)
 }
 
 // Sets the current text object's text matrix and line matrix to m.
@@ -62,76 +42,43 @@ func (c *ContentStream) TD(x, y float64) {
 	fmt.Fprintf(c.buf, "%f %f Td\n", x, y)
 }
 
-// Sets the current text matrix and line matrix equal to the line matrix offset by (0, -c.Leading)
-func (c *ContentStream) TStar() {
+// Begins a new text line by setting the current text matrix and line matrix equal to the line matrix offset by (0, -c.Leading); T*.
+func (c *ContentStream) TNextLine() {
 	c.TextObj.Matrix = Mul(c.LineMatrix, Matrix{1, 0, 0, 1, 0, -c.Leading})
 	c.LineMatrix = c.TextObj.Matrix
 	c.buf.Write([]byte("T*\n"))
 }
 
-// Writes s and advances the text matrix by the extent of s.
-func (c *ContentStream) Tj(s string) {
-	ext := c.TextExtentPts(s)
-	b, _ := c.Font.enc.Bytes([]byte(s))
+// Writes t (without kerning) and advances the text matrix by the extent of t.
+func (c *ContentStream) Tj(t []rune) {
+	ext := c.RawExtentPts(t)
+	b, _ := c.Font.enc.Bytes([]byte(string(t)))
 	c.TextObj.Matrix = Mul(c.TextObj.Matrix, Matrix{1, 0, 0, 1, ext, 0})
 	fmt.Fprintf(c.buf, "<%X> Tj\n", b)
 }
 
-func (c *ContentStream) TJ(runs []string, adjs []float64) error {
-	if len(runs) != len(adjs) {
-		return fmt.Errorf("equal number of runs and adjs required")
-	}
-	var ext1, ext2 float64
-	c.buf.WriteByte('[')
-	tmp := []byte{}
-	for i := range runs {
-		ext1 += adjs[i]
-		ext2 += c.UnscaledTextExtentPts(string(runs[i]))
-		b, _ := c.Font.enc.Bytes([]byte(runs[i]))
-		tmp = append(tmp, b...)
-		if adjs[i] != 0 {
-			fmt.Fprintf(c.buf, "<%X>%.3f", tmp, -adjs[i])
-			tmp = tmp[:0]
-		}
-	}
-	if len(tmp) != 0 {
-		fmt.Fprintf(c.buf, "<%X>", tmp)
-	}
-	c.buf.Write([]byte("] TJ\n"))
-	ext := ext2 - FUToPt(ext1, c.FontSize)
-	c.TextObj.Matrix = Mul(c.TextObj.Matrix, Matrix{1, 0, 0, 1, ext * c.Scale / 100, 0})
-	return nil
-}
-
-func (c *ContentStream) TJSpace(run []rune, kerns []int, spaceAdj float64) error {
-	if len(run) != len(kerns) {
-		return fmt.Errorf("equal number of runes and kerns required %d %d", len(run), len(kerns))
-	}
-	var ext float64
-	if spaceAdj != 0 {
-		c.TWordSpace(FUToPt(spaceAdj, c.FontSize))
+// Writes t (with kerning) and advances the text matrix by the extent of t.
+func (c *ContentStream) TJ(t []rune, kerns []int) error {
+	if len(t) != len(kerns) {
+		return fmt.Errorf("equal number of runes and kerns required. rune count: %d, kern count: %d", len(t), len(kerns))
 	}
 	c.buf.WriteByte('[')
 	tmp := []byte{}
-	var kerntotal int
-	for i, r := range run {
+	for i, r := range t {
 		b, _ := c.Font.enc.Bytes([]byte(string(r)))
 		tmp = append(tmp, b...)
 		if kerns[i] != 0 {
 			fmt.Fprintf(c.buf, "<%X>%d", tmp, -(kerns[i]))
 			tmp = tmp[:0]
-			kerntotal += kerns[i]
 		}
 	}
 	if len(tmp) != 0 {
 		fmt.Fprintf(c.buf, "<%X>", tmp)
 	}
 	c.buf.Write([]byte("] TJ\n"))
-	ext = c.UnscaledTextExtentPts(string(run))
-	ext += FUToPt(float64(-kerntotal), c.FontSize)
-	ext *= c.Scale / 100
-	if spaceAdj != 0 {
-		c.TWordSpace(0)
+	ext, err := c.ExtentKernsPts(t, kerns)
+	if err != nil {
+		return err
 	}
 	c.TextObj.Matrix = Mul(c.TextObj.Matrix, Matrix{1, 0, 0, 1, ext, 0})
 	return nil

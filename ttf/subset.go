@@ -13,24 +13,24 @@ import (
 type TableTag uint32
 
 const (
-	TAG_cmap TableTag = 'c'<<24 | 'm'<<16 | 'a'<<8 | 'p'
-	TAG_glyf TableTag = 'g'<<24 | 'l'<<16 | 'y'<<8 | 'f'
-	TAG_head TableTag = 'h'<<24 | 'e'<<16 | 'a'<<8 | 'd'
-	TAG_hhea TableTag = 'h'<<24 | 'h'<<16 | 'e'<<8 | 'a'
-	TAG_hmtx TableTag = 'h'<<24 | 'm'<<16 | 't'<<8 | 'x'
-	TAG_loca TableTag = 'l'<<24 | 'o'<<16 | 'c'<<8 | 'a'
-	TAG_maxp TableTag = 'm'<<24 | 'a'<<16 | 'x'<<8 | 'p'
+	Cmap TableTag = 'c'<<24 | 'm'<<16 | 'a'<<8 | 'p'
+	Glyf TableTag = 'g'<<24 | 'l'<<16 | 'y'<<8 | 'f'
+	Head TableTag = 'h'<<24 | 'e'<<16 | 'a'<<8 | 'd'
+	Hhea TableTag = 'h'<<24 | 'h'<<16 | 'e'<<8 | 'a'
+	Hmtx TableTag = 'h'<<24 | 'm'<<16 | 't'<<8 | 'x'
+	Loca TableTag = 'l'<<24 | 'o'<<16 | 'c'<<8 | 'a'
+	Maxp TableTag = 'm'<<24 | 'a'<<16 | 'x'<<8 | 'p'
 )
 
 var pdfTables = []TableTag{
 	//1330851634, // OS/2
-	TAG_cmap, // cmap
-	TAG_glyf, // glyf
-	TAG_head, // head
-	TAG_hhea, // hhea
-	TAG_hmtx, // hmtx
-	TAG_loca, // loca
-	TAG_maxp, // maxp
+	Cmap, // cmap
+	Glyf, // glyf
+	Head, // head
+	Hhea, // hhea
+	Hmtx, // hmtx
+	Loca, // loca
+	Maxp, // maxp
 	//1851878757, // name
 	//1886352244, // post
 }
@@ -62,7 +62,7 @@ func Subset(f *sfnt.Font, src []byte, cutset map[rune]struct{}) ([]byte, error) 
 		return *new([]byte), err
 	}
 
-	head, err := ld.RawTable(loader.Tag(TAG_head))
+	head, err := ld.RawTable(loader.Tag(Head))
 	if err != nil {
 		return *new([]byte), err
 	}
@@ -72,7 +72,7 @@ func Subset(f *sfnt.Font, src []byte, cutset map[rune]struct{}) ([]byte, error) 
 	}
 	isLong := headP.IndexToLocFormat == 1
 
-	loca, err := ld.RawTable(loader.Tag(TAG_loca))
+	loca, err := ld.RawTable(loader.Tag(Loca))
 	if err != nil {
 		return *new([]byte), err
 	}
@@ -81,7 +81,7 @@ func Subset(f *sfnt.Font, src []byte, cutset map[rune]struct{}) ([]byte, error) 
 		return *new([]byte), err
 	}
 
-	glyf, err := ld.RawTable(loader.Tag(TAG_glyf))
+	glyf, err := ld.RawTable(loader.Tag(Glyf))
 	if err != nil {
 		return *new([]byte), err
 	}
@@ -163,7 +163,7 @@ func Subset(f *sfnt.Font, src []byte, cutset map[rune]struct{}) ([]byte, error) 
 
 	// update the number of glyphs in the maxp table
 	// https://learn.microsoft.com/en-us/typography/opentype/spec/maxp
-	maxp, err := ld.RawTable(1835104368)
+	maxp, err := ld.RawTable(loader.Tag(Maxp))
 	if err != nil {
 		return *new([]byte), err
 	}
@@ -188,13 +188,13 @@ func Subset(f *sfnt.Font, src []byte, cutset map[rune]struct{}) ([]byte, error) 
 	tbl := make([]loader.Table, len(pdfTables))
 	for i, tag := range pdfTables {
 		switch tag {
-		case 1735162214:
+		case Glyf:
 			tbl[i] = loader.Table{Content: glyf, Tag: loader.Tag(tag)}
-		case 1751474532:
+		case Head:
 			tbl[i] = loader.Table{Content: head, Tag: loader.Tag(tag)}
-		case 1819239265:
+		case Loca:
 			tbl[i] = loader.Table{Content: loca, Tag: loader.Tag(tag)}
-		case 1835104368:
+		case Maxp:
 			tbl[i] = loader.Table{Content: maxp, Tag: loader.Tag(tag)}
 		default:
 			cnt, err := ld.RawTable(loader.Tag(tag))

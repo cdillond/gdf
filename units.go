@@ -3,10 +3,10 @@ package gdf
 import "math"
 
 const (
-	DEG float64 = math.Pi / 180 // 1 degree in radians
-	CM  float64 = 72 / 2.54     // 1 centimeter in points
-	IN  float64 = 72            // 1 inch in points
-	MM  float64 = CM / 10       // 1 millimeter in points
+	Deg float64 = math.Pi / 180 // 1 degree in radians
+	Cm  float64 = 72 / 2.54     // 1 centimeter in points
+	In  float64 = 72            // 1 inch in points
+	Mm  float64 = Cm / 10       // 1 millimeter in points
 )
 
 type Rect struct {
@@ -14,19 +14,12 @@ type Rect struct {
 }
 
 var (
-	A5         = Rect{0, 0, 148 * MM, 210 * MM}
-	A4         = Rect{0, 0, 210 * MM, 297 * MM}
-	A3         = Rect{0, 0, 297 * MM, 420 * MM}
-	US_LETTER  = Rect{0, 0, 8.5 * IN, 11 * IN}
-	US_LEGAL   = Rect{0, 0, 8.5 * IN, 14 * IN}
-	US_TABLOID = Rect{0, 0, 11 * IN, 17 * IN}
-
-	A5_LS         = Rect{0, 0, 210 * MM, 148 * MM}
-	A4_LS         = Rect{0, 0, 297 * MM, 210 * MM}
-	A3_LS         = Rect{0, 0, 420 * MM, 297 * MM}
-	US_LETTER_LS  = Rect{0, 0, 11 * IN, 8.5 * IN}
-	US_LEGAL_LS   = Rect{0, 0, 14 * IN, 8.5 * IN}
-	US_TABLOID_LS = Rect{0, 0, 17 * IN, 11 * IN}
+	A5        = Rect{0, 0, 148 * Mm, 210 * Mm}
+	A4        = Rect{0, 0, 210 * Mm, 297 * Mm}
+	A3        = Rect{0, 0, 297 * Mm, 420 * Mm}
+	USLetter  = Rect{0, 0, 8.5 * In, 11 * In}
+	USLegal   = Rect{0, 0, 8.5 * In, 14 * In}
+	USTabloid = Rect{0, 0, 11 * In, 17 * In}
 )
 
 type Margins struct {
@@ -34,11 +27,11 @@ type Margins struct {
 }
 
 var (
-	MARGINS_NONE    = Margins{0, 0, 0, 0}
-	MARGINS_HALF_IN = Margins{.5 * IN, .5 * IN, .5 * IN, .5 * IN}
-	MARGINS_1_IN    = Margins{IN, IN, IN, IN}
-	MARGINS_1_CM    = Margins{CM, CM, CM, CM}
-	MARGINS_5_PT    = Margins{5, 5, 5, 5}
+	NoMargins = Margins{0, 0, 0, 0}
+	HalfInch  = Margins{.5 * In, .5 * In, .5 * In, .5 * In}
+	OneInch   = Margins{In, In, In, In}
+	OneCm     = Margins{Cm, Cm, Cm, Cm}
+	FivePt    = Margins{5, 5, 5, 5}
 )
 
 // Converts n font units to points given a font size in points. For PDFs, ppem is always 1000.
@@ -71,4 +64,14 @@ func (r Rect) Diagonal() float64 {
 func (r Rect) Angles() (float64, float64) {
 	a := math.Atan((r.URY - r.LLY) / (r.URX - r.LLX))
 	return a, 90 - a
+}
+
+// Returns the rectangle that results from rotating r 90 degrees.
+func (r Rect) ToLandscape() Rect {
+	return Rect{
+		LLX: r.LLY,
+		LLY: r.LLX,
+		URX: r.URY,
+		URY: r.URX,
+	}
 }

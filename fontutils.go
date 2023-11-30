@@ -30,7 +30,7 @@ func calculateWidths(f *Font) {
 	f.Widths = bs[f.FirstChar : f.LastChar+1]
 }
 
-// advance in font units
+// Returns the advance of r in font units.
 func GlyphAdvance(r rune, f *Font) int {
 	adv, ok := f.Charset[r]
 	if ok {
@@ -52,6 +52,7 @@ func GlyphAdvance(r rune, f *Font) int {
 	return int(adv26_6)
 }
 
+// Returns the advance and kerning of r1 when set before r2.
 func ShapedGlyphAdv(r1, r2 rune, f *Font) (int, int) {
 	adv := GlyphAdvance(r1, f)
 	gid1, err := f.GlyphIndex(f.buf, r1)
@@ -81,44 +82,6 @@ func fontBBox(font *sfnt.Font, buf *sfnt.Buffer) (fixed.Rectangle26_6, error) {
 	return bbox, nil
 }
 
-// does not account for horizontal stretch state
-func lineExt(txt []rune, kerns []int, adj float64, f *Font) float64 {
-	var ext int
-	var spExt float64
-	for i, r := range txt {
-		ext += GlyphAdvance(r, f) + kerns[i]
-		if r == ' ' {
-			spExt += adj
-		}
-	}
-	return float64(ext) + spExt
-}
-
-// Returns the extent of an unshaped text run in font units
-func TextExtent(s string, f *Font) float64 {
-	var ext int
-	for _, r := range s {
-		ext += GlyphAdvance(r, f)
-	}
-	return float64(ext)
-}
-
-// Returns the extent of a shaped text run in font units
-func ShapedTextExtent(s []rune, f *Font) float64 {
-	if len(s) == 0 {
-		return 0
-	}
-	var ext int
-	runes := []rune(s)
-	i := 0
-	for ; i < len(runes)-1; i++ {
-		adv, kern := ShapedGlyphAdv(runes[i], runes[i+1], f)
-		ext += adv + kern
-	}
-	ext += GlyphAdvance(runes[i], f)
-	return float64(ext)
-}
-
 // Returns the ascent and descent of the glyph corresponding to the given rune.
 func AscDesc(r rune, f *Font) (float64, float64) {
 	gid, err := f.GlyphIndex(f.buf, r)
@@ -131,7 +94,7 @@ func AscDesc(r rune, f *Font) (float64, float64) {
 	return float64(-bounds.Min.Y), float64(bounds.Max.Y)
 }
 
-// Returns the ascent and descent of the glyph corresponding to the given rune.
+// Returns the maximum ascent and descent of the glyphs in the given text.
 func TextAscDesc(text []rune, f *Font) (float64, float64) {
 	var maxA, maxD float64
 	for i := range text {
@@ -145,34 +108,3 @@ func TextAscDesc(text []rune, f *Font) (float64, float64) {
 	}
 	return maxA, maxD
 }
-
-/*
-func CalculateWidths2(f *CIDType2Font) {
-	chars := make([]rune, 0, len(f.Charset))
-	for key := range f.Charset {
-		chars = append(chars, key)
-	}
-	sort.Slice(chars, func(i, j int) bool { return chars[i] < chars[j] })
-
-	all := []WidthArrayEntry{}
-	if len(chars) < 1 {
-		return
-	}
-	i := 1
-	latest := WidthArrayEntry{CID: int(chars[0]), Ws: []int{f.Charset[chars[0]]}}
-	for ; i < len(chars); i++ {
-		if chars[i] == chars[i-1]+1 {
-			w := append(latest.Ws, f.Charset[chars[i]])
-			latest.Ws = w
-		} else {
-			all = append(all, latest)
-			latest = WidthArrayEntry{CID: int(chars[i]), Ws: []int{f.Charset[chars[i]]}}
-		}
-		if i == len(chars)-1 {
-			all = append(all, latest)
-		}
-	}
-	f.W = all
-
-}
-*/
