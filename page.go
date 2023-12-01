@@ -102,5 +102,6 @@ func (p *Page) NewContentStream() *ContentStream {
 	cs.Parent = p
 	cs.buf = new(bytes.Buffer)
 	cs.GS = NewGS()
+	cs.Filter = Flate
 	return cs
 }
