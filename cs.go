@@ -71,9 +71,6 @@ func (c *ContentStream) children() []obj {
 	return []obj{}
 }
 func (c *ContentStream) encode(w io.Writer) (int, error) {
-	if c.buf.Len() > 1024 {
-		c.Filter = Flate
-	}
 	var n int
 	switch c.Filter {
 	case Flate:

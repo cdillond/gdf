@@ -93,7 +93,7 @@ func (p *Page) children() []obj {
 
 func (p *Page) encode(w io.Writer) (int, error) {
 	return fmt.Fprintf(w, "<<\n/Type /Page\n/Parent 2 0 R\n/MediaBox [%f %f %f %f]\n/CropBox [%f %f %f %f]\n/Contents %d 0 R\n/Resources %s>>\n",
-		p.MediaBox.LLX, p.MediaBox.LLY, p.MediaBox.URX, p.MediaBox.URY, p.CropBox.LLX, p.CropBox.LLY, p.CropBox.URX, p.CropBox.URY, p.Content[0].refNum(), p.resourceDict.String())
+		p.MediaBox.LLX, p.MediaBox.LLY, p.MediaBox.URX, p.MediaBox.URY, p.CropBox.LLX, p.CropBox.LLY, p.CropBox.URX, p.CropBox.URY, p.Content[0].refNum(), p.resourceDict.rep())
 }
 
 func (p *Page) NewContentStream() *ContentStream {

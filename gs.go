@@ -72,8 +72,8 @@ func NewGS() *GS {
 
 // QSave pushes the current GS (graphics sate) to c's GSStack (graphics state stack).
 func (c *ContentStream) QSave() {
-	g := c.GS
-	c.gSStack = append(c.gSStack, g)
+	g := *c.GS
+	c.gSStack = append(c.gSStack, &g)
 	c.stack = append(c.stack, gState)
 	c.buf.Write([]byte("q\n"))
 }
@@ -98,7 +98,7 @@ func (c *ContentStream) QRestore() error {
 
 // Sets c's Current Transformation Matrix (c.GS.Matrix) to the matrix product of m and c.GS.Matrix.
 func (c *ContentStream) Concat(m Matrix) {
-	c.GS.Matrix = Mul(c.GS.Matrix, m)
+	c.GS.Matrix = Mul(m, c.GS.Matrix) // NOT COMMUTATIVE, THIS ORDER MUST REMAIN THE SAME
 	fmt.Fprintf(c.buf, "%f %f %f %f %f %f cm\n", m.A, m.B, m.C, m.D, m.E, m.F)
 }
 
@@ -139,7 +139,7 @@ func (c *ContentStream) SetRenderIntent(n Name) {
 }
 
 // Set the flatness (c.GS.Flatness) to f.
-func (c *ContentStream) SetFlattness(f float64) {
+func (c *ContentStream) SetFlatness(f float64) {
 	c.Flatness = f
 	fmt.Fprintf(c.buf, "%f i\n", f)
 }

@@ -66,7 +66,7 @@ func (r *resourceStream) encode(w io.Writer) (int, error) {
 	return n + t, nil
 }
 
-func (r resourceDict) String() string {
+func (r resourceDict) rep() string {
 	bldr := new(strings.Builder)
 	bldr.WriteString("<<\n")
 	if len(r.Fonts) > 0 {

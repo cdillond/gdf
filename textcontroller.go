@@ -8,8 +8,8 @@ import (
 )
 
 var (
-	ErrTolerance = fmt.Errorf("unable to break lines using current tolerances")
-	ErrWordSize  = fmt.Errorf("source text contains an unbreakable word that is longer than the maximum line length")
+	errTolerance = fmt.Errorf("unable to break lines using current tolerances")
+	errWordSize  = fmt.Errorf("source text contains an unbreakable word that is longer than the maximum line length")
 )
 
 type TextController struct {
@@ -82,9 +82,8 @@ const (
 )
 
 /*
-FormatText represents a slice of runes that can specify the formatting and content of the source text. FormatText
-is a slice of runes that can contain special formatting directives. The TextController applies the following rules
-to these special characters:
+FormatText represents a slice of runes that can specify the formatting and content of the source text. The TextController applies the following rules
+to the formatting directives contained in FormatText:
  1. \x03 (U+0003) is interpreted as end of text. Any runes that appear after this character will not be parsed.
  2. \x07 (U+0007) is interpreted as a color indicator. This character must be followed by three comma-separated 3-digit integers in [0,255]
     that specify the red, green, and blue components of an RGBColor. (This is equivalent to setting the non-stroking color of the document to
@@ -92,7 +91,7 @@ to these special characters:
  3. \x0E (U+000E) toggles bold text on and off.
  4. \x0F (U+000F) toggles italic text on and off.
     The bold and italic indicators can be used to switch among fonts in a given font family. Example:
-    This is regular text. \x0EThis is bold text, written with the bold font.\x0FThis is bold-italic text.\x0EThis is italic text.\x0F This is regular text.
+    This is regular text. \x0EThis is bold text. \x0FThis is bold-italic text. \x0EThis is italic text. \x0FThis is regular text.
 */
 type FormatText []rune
 
@@ -135,7 +134,7 @@ func NewTextController(src FormatText, lineWidth float64, f FontFamily, cfg Cont
 	breakpoints, lineWidths, adjs, err := tc.breakLines(tc.squishTolerance, tc.stretchTolerance)
 	// keep trying until it's clear there's no acceptable solution
 	if err != nil {
-		if errors.Is(err, ErrTolerance) {
+		if errors.Is(err, errTolerance) {
 			squish, stretch := tc.squishTolerance*1.25, tc.stretchTolerance*2
 			tc.squishTolerance = 1 / tc.squishTolerance
 			for squish < 1 && err != nil {
@@ -438,7 +437,7 @@ func (tc *TextController) breakLines(squishTolerance, stretchTolerance float64) 
 			curWidth += v.Width()
 			runWidth += v.Width()
 			if runWidth > tc.lineWidth {
-				return *new([]int), *new([]float64), *new([]float64), fmt.Errorf("%w: %s", ErrWordSize, string(v.chars))
+				return *new([]int), *new([]float64), *new([]float64), fmt.Errorf("%w: %s", errWordSize, string(v.chars))
 			}
 		case skip:
 			runWidth = 0
@@ -493,7 +492,7 @@ func (tc *TextController) breakLines(squishTolerance, stretchTolerance float64) 
 			}
 			// unable to proceed
 			if lineStart == len(activeNodes) {
-				return []int{}, []float64{}, []float64{}, fmt.Errorf("%w, squish: %f stretch: %f", ErrTolerance, squishTolerance, stretchTolerance)
+				return []int{}, []float64{}, []float64{}, fmt.Errorf("%w, squish: %f stretch: %f", errTolerance, squishTolerance, stretchTolerance)
 			}
 		case fWeight:
 			switch v {
@@ -512,7 +511,7 @@ func (tc *TextController) breakLines(squishTolerance, stretchTolerance float64) 
 			runWidth = 0
 			// this should already have been caught, but it might help to do a bounds check just to be safe
 			if len(activeNodes) == 0 {
-				return []int{}, []float64{}, []float64{}, fmt.Errorf("%w, squish: %f stretch: %f", ErrTolerance, squishTolerance, stretchTolerance)
+				return []int{}, []float64{}, []float64{}, fmt.Errorf("%w, squish: %f stretch: %f", errTolerance, squishTolerance, stretchTolerance)
 			}
 			// the remaining active node should be the one with the optimal endpoint
 			endNode := activeNodes[len(activeNodes)-1]
