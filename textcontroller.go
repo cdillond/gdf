@@ -1,18 +1,24 @@
 package gdf
 
 import (
+	"errors"
 	"fmt"
 	"math"
 	"slices"
 )
 
+var (
+	ErrTolerance = fmt.Errorf("unable to break lines using current tolerances")
+	ErrWordSize  = fmt.Errorf("source text contains an unbreakable word that is longer than the maximum line length")
+)
+
 type TextController struct {
 	src              []rune        // source text
-	f                FontFamily    // the set of fonts to be used. On each call to k.DrawText, the supplied ContentStream's font will be set to one of the fonts from f, according to k's font weight state. The fonts need not be of the same actual family - chosen families are valid, too!
+	f                FontFamily    // the set of fonts to be used. On each call to DrawText, the supplied ContentStream's font will be set to one of the fonts from f, according to the TextConroller's font weight state. The fonts need not be of the same actual family - chosen families are valid, too!
 	isBold, isItal   bool          // font weight state
 	curFont          *Font         // Used for calculating line widths, but not for actually writing the text.
-	fontSize         float64       // font size. On each call to k.DrawText, the supplied ContentStream's FontSize will be set to this value
-	leading          float64       // text leading. On each call to k.DrawText, the supplied ContentStream's Leading will be set to this value.
+	fontSize         float64       // font size. On each call to DrawText, the supplied ContentStream's FontSize will be set to this value
+	leading          float64       // text leading. On each call to DrawText, the supplied ContentStream's Leading will be set to this value.
 	lineWidth        float64       // ideal line width in Font Units
 	a                Alignment     // paragraph alignment
 	j                Justification // paragraph justification style
@@ -36,11 +42,10 @@ type ControllerCfg struct {
 	FontSize         float64
 	Leading          float64
 	IsIndented       bool
-	NColor, SColor   Color
+	NColor, SColor   Color // default non-stroking and stroking colors
 	StretchTolerance float64
 	SquishTolerance  float64
 	IsBold, IsItal   bool
-	set              bool // used to determine if fields with default values of 0 were unset
 }
 
 func NewControllerCfg(fontSize, leading float64) ControllerCfg {
@@ -54,7 +59,6 @@ func NewControllerCfg(fontSize, leading float64) ControllerCfg {
 		NColor:           nil,
 		StretchTolerance: 5,
 		SquishTolerance:  .5,
-		set:              true,
 	}
 }
 
@@ -131,12 +135,14 @@ func NewTextController(src FormatText, lineWidth float64, f FontFamily, cfg Cont
 	breakpoints, lineWidths, adjs, err := tc.breakLines(tc.squishTolerance, tc.stretchTolerance)
 	// keep trying until it's clear there's no acceptable solution
 	if err != nil {
-		squish, stretch := tc.squishTolerance*1.25, tc.stretchTolerance*2
-		tc.squishTolerance = 1 / tc.squishTolerance
-		for squish < 1 && err != nil {
-			breakpoints, lineWidths, adjs, err = tc.breakLines(squish, stretch)
-			squish *= 2
-			stretch *= 2
+		if errors.Is(err, ErrTolerance) {
+			squish, stretch := tc.squishTolerance*1.25, tc.stretchTolerance*2
+			tc.squishTolerance = 1 / tc.squishTolerance
+			for squish < 1 && err != nil {
+				breakpoints, lineWidths, adjs, err = tc.breakLines(squish, stretch)
+				squish *= 2
+				stretch *= 2
+			}
 		}
 		if err != nil {
 			return *new(TextController), err
@@ -161,10 +167,10 @@ func (tc *TextController) DrawText(c *ContentStream, area Rect) (error, bool) {
 	maxLines := area.Height() / tc.leading
 	c.QSave()
 	if c.Leading != tc.leading {
-		c.TLeading(tc.leading)
+		c.SetLeading(tc.leading)
 	}
-	if c.Font != tc.curFont && c.FontSize != tc.fontSize {
-		c.TFont(tc.fontSize, tc.curFont)
+	if c.Font != tc.curFont || c.FontSize != tc.fontSize {
+		c.SetFont(tc.fontSize, tc.curFont)
 	}
 	if c.NColor != tc.ncolor && tc.ncolor != nil {
 		c.SetColor(tc.ncolor)
@@ -174,9 +180,9 @@ func (tc *TextController) DrawText(c *ContentStream, area Rect) (error, bool) {
 	}
 	et, err := c.BeginText()
 	if c.RenderMode != tc.r {
-		c.TRenderMode(tc.r)
+		c.SetRenderMode(tc.r)
 	}
-	c.Td(area.LLX, area.URY-tc.leading)
+	c.TextOffset(area.LLX, area.URY-tc.leading)
 	if err != nil {
 		c.QRestore()
 		return err, false
@@ -378,7 +384,7 @@ func (tc *TextController) tokenize(src FormatText) []token {
 				out = append(out, ital)
 			}
 			isItal = !isItal
-		case '\u0003':
+		case '\u0003': // eot
 			if len(run) != 0 {
 				out = append(out, box{chars: run, kerns: kerns, advs: advs, width: width(advs, kerns)})
 			}
@@ -425,12 +431,17 @@ func (tc *TextController) breakLines(squishTolerance, stretchTolerance float64) 
 	var numSpaces float64
 	var lineStart int
 	curWidth := tc.firstIndent
+	var runWidth float64
 	for i := 0; i < len(tc.tokens); i++ {
 		switch v := tc.tokens[i].(type) {
 		case box:
 			curWidth += v.Width()
+			runWidth += v.Width()
+			if runWidth > tc.lineWidth {
+				return *new([]int), *new([]float64), *new([]float64), fmt.Errorf("%w: %s", ErrWordSize, string(v.chars))
+			}
 		case skip:
-
+			runWidth = 0
 			curWidth += v.Width()
 			numSpaces++
 
@@ -482,7 +493,7 @@ func (tc *TextController) breakLines(squishTolerance, stretchTolerance float64) 
 			}
 			// unable to proceed
 			if lineStart == len(activeNodes) {
-				return []int{}, []float64{}, []float64{}, fmt.Errorf("unable to break lines using current tolerances")
+				return []int{}, []float64{}, []float64{}, fmt.Errorf("%w, squish: %f stretch: %f", ErrTolerance, squishTolerance, stretchTolerance)
 			}
 		case fWeight:
 			switch v {
@@ -498,9 +509,10 @@ func (tc *TextController) breakLines(squishTolerance, stretchTolerance float64) 
 		case ncChange:
 		case hyphen:
 		case newline:
+			runWidth = 0
 			// this should already have been caught, but it might help to do a bounds check just to be safe
 			if len(activeNodes) == 0 {
-				return []int{}, []float64{}, []float64{}, fmt.Errorf("unable to break lines using current tolerances")
+				return []int{}, []float64{}, []float64{}, fmt.Errorf("%w, squish: %f stretch: %f", ErrTolerance, squishTolerance, stretchTolerance)
 			}
 			// the remaining active node should be the one with the optimal endpoint
 			endNode := activeNodes[len(activeNodes)-1]
@@ -556,7 +568,7 @@ func (tc *TextController) writeLines(c *ContentStream, numLines int) {
 		if _, ok := breaks[i]; ok {
 			var dif float64
 			var alignAdj float64
-			if tc.adjs[lineCount] == 0 && (tc.a == Center || tc.a == Left) {
+			if tc.adjs[lineCount] == 0 && (tc.a == Center || tc.a == Left) && len(run) != 0 {
 				dif = tc.lineWidth - tc.lineWidths[lineCount]
 				switch tc.a {
 				case Center:
@@ -568,17 +580,17 @@ func (tc *TextController) writeLines(c *ContentStream, numLines int) {
 			}
 			if len(run) != 0 {
 				if tc.adjs[lineCount] != 0 {
-					c.TWordSpace(FUToPt(tc.adjs[lineCount], c.FontSize))
-					c.TJ(run, kerns)
-					c.TWordSpace(0)
+					c.SetWordSpace(FUToPt(tc.adjs[lineCount], c.FontSize))
+					c.ShowText(run, kerns)
+					c.SetWordSpace(0)
 				} else {
-					c.TJ(run, kerns)
+					c.ShowText(run, kerns)
 				}
 			}
 			if dif != 0 {
 				c.Concat(Translate(-FUToPt(alignAdj, tc.fontSize), 0))
 			}
-			c.TNextLine()
+			c.NextLine()
 			if indented {
 				c.Concat(Translate(-FUToPt(tc.firstIndent, tc.fontSize), 0))
 				indented = false
@@ -601,7 +613,7 @@ func (tc *TextController) writeLines(c *ContentStream, numLines int) {
 			if len(run) != 0 {
 				var dif float64
 				var alignAdj float64
-				if tc.adjs[lineCount] == 0 && (tc.a == Center || tc.a == Left) {
+				if tc.adjs[lineCount] == 0 && (tc.a == Center || tc.a == Left) && len(run) != 0 {
 					dif = tc.lineWidth - tc.lineWidths[lineCount]
 					switch tc.a {
 					case Center:
@@ -612,11 +624,11 @@ func (tc *TextController) writeLines(c *ContentStream, numLines int) {
 					c.Concat(Translate(FUToPt(alignAdj, tc.fontSize), 0))
 				}
 				if tc.adjs[lineCount] != 0 {
-					c.TWordSpace(FUToPt(tc.adjs[lineCount], c.FontSize))
-					c.TJ(run, kerns)
-					c.TWordSpace(0)
+					c.SetWordSpace(FUToPt(tc.adjs[lineCount], c.FontSize))
+					c.ShowText(run, kerns)
+					c.SetWordSpace(0)
 				} else {
-					c.TJ(run, kerns)
+					c.ShowText(run, kerns)
 				}
 
 				if dif != 0 {
@@ -627,19 +639,19 @@ func (tc *TextController) writeLines(c *ContentStream, numLines int) {
 			kerns = kerns[:0]
 			switch v {
 			case regular:
-				c.TFont(tc.fontSize, tc.f.Regular)
+				c.SetFont(tc.fontSize, tc.f.Regular)
 			case bold:
-				c.TFont(tc.fontSize, tc.f.Bold)
+				c.SetFont(tc.fontSize, tc.f.Bold)
 			case ital:
-				c.TFont(tc.fontSize, tc.f.Ital)
+				c.SetFont(tc.fontSize, tc.f.Ital)
 			case boldItal:
-				c.TFont(tc.fontSize, tc.f.BoldItal)
+				c.SetFont(tc.fontSize, tc.f.BoldItal)
 			}
 		case ncChange:
 			if len(run) != 0 {
 				var dif float64
 				var alignAdj float64
-				if tc.adjs[lineCount] == 0 && (tc.a == Center || tc.a == Left) {
+				if tc.adjs[lineCount] == 0 && (tc.a == Center || tc.a == Left) && len(run) != 0 {
 					dif = tc.lineWidth - tc.lineWidths[lineCount]
 					switch tc.a {
 					case Center:
@@ -650,11 +662,11 @@ func (tc *TextController) writeLines(c *ContentStream, numLines int) {
 					c.Concat(Translate(FUToPt(alignAdj, tc.fontSize), 0))
 				}
 				if tc.adjs[lineCount] != 0 {
-					c.TWordSpace(FUToPt(tc.adjs[lineCount], c.FontSize))
-					c.TJ(run, kerns)
-					c.TWordSpace(0)
+					c.SetWordSpace(FUToPt(tc.adjs[lineCount], c.FontSize))
+					c.ShowText(run, kerns)
+					c.SetWordSpace(0)
 				} else {
-					c.TJ(run, kerns)
+					c.ShowText(run, kerns)
 				}
 
 				if dif != 0 {

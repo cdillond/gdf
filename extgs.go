@@ -1,5 +1,6 @@
 package gdf
 
+/*
 import (
 	"fmt"
 	"io"
@@ -98,3 +99,4 @@ const (
 	// BG UNSUPPORTED
 	// UCR UNSUPPORTED
 )
+*/

@@ -2,7 +2,7 @@ package gdf
 
 import "fmt"
 
-// Returns the extent (total advance) in font units of t, when set in c's current font. The returned value
+// Returns the extent in font units of t, when set in c's current font. The returned value
 // accounts for kerning, word spacing, and horizontal scaling.
 func (c *ContentStream) ExtentFU(t []rune) float64 {
 	var ext float64
@@ -20,16 +20,16 @@ func (c *ContentStream) ExtentFU(t []rune) float64 {
 		spaceCount++
 	}
 	ext += c.WordSpace * spaceCount
-	return ext * c.Scale / 100
+	return ext * c.HScale / 100
 }
 
-// Returns the extent (total advance) in points of t, when set in c's current font a the current font size.
+// Returns the extent in points of t, when set in c's current font at the current font size.
 // The returned value accounts for kerning, word spacing, and horizontal scaling.
 func (c *ContentStream) ExtentPts(t []rune) float64 {
 	return FUToPt(c.ExtentFU(t), c.FontSize)
 }
 
-// Returns the extent (total advance) in font units of t, when set in c's current font. The returned value
+// Returns the extent in font units of t, when set in c's current font. The returned value
 // accounts for word spacing and horizontal scaling, but does not account for kerning.
 func (c *ContentStream) RawExtentFU(t []rune) float64 {
 	var ext float64
@@ -41,16 +41,16 @@ func (c *ContentStream) RawExtentFU(t []rune) float64 {
 		}
 	}
 	ext += c.WordSpace * spaceCount
-	return ext * c.Scale / 100
+	return ext * c.HScale / 100
 }
 
-// Returns the extent (total advance) in points of t, when set in c's current font a the current font size.
+// Returns the extent in points of t, when set in c's current font at the current font size.
 // The returned value accounts for word spacing and horizontal scaling, but does not account for kerning.
 func (c *ContentStream) RawExtentPts(t []rune) float64 {
 	return FUToPt(c.RawExtentFU(t), c.FontSize)
 }
 
-// Returns the extent (total advance) in font units of t, when set in c's current font. The returned value
+// Returns the extent in font units of t, when set in c's current font. The returned value
 // accounts for kerning, word spacing, and horizontal scaling.
 func (c *ContentStream) ExtentKernsFU(t []rune, kerns []int) (float64, error) {
 	if len(t) != len(kerns) {
@@ -65,10 +65,10 @@ func (c *ContentStream) ExtentKernsFU(t []rune, kerns []int) (float64, error) {
 		}
 	}
 	ext += c.WordSpace * spaceCount
-	return ext * c.Scale / 100, nil
+	return ext * c.HScale / 100, nil
 }
 
-// Returns the extent (total advance) in points of t, when set in c's current font a the current font size.
+// Returns the extent in points of t, when set in c's current font at the current font size.
 // The returned value accounts for kerning, word spacing, and horizontal scaling.
 func (c *ContentStream) ExtentKernsPts(t []rune, kerns []int) (float64, error) {
 	fu, err := c.ExtentKernsFU(t, kerns)
@@ -78,7 +78,7 @@ func (c *ContentStream) ExtentKernsPts(t []rune, kerns []int) (float64, error) {
 	return FUToPt(fu, c.FontSize), nil
 }
 
-// Returns the extent (total advance) in font units of t, when set in font f. The returned value
+// Returns the extent in font units of t, when set in font f. The returned value
 // accounts for kerning, word spacing, and horizontal scaling.
 func (c *ContentStream) ExtentFontFU(t []rune, f *Font) float64 {
 	var ext float64
@@ -96,11 +96,11 @@ func (c *ContentStream) ExtentFontFU(t []rune, f *Font) float64 {
 		spaceCount++
 	}
 	ext += c.WordSpace * spaceCount
-	return ext * c.Scale / 100
+	return ext * c.HScale / 100
 
 }
 
-// Returns the extent (total advance) in points of text, when set in font f at the given size. The returned value
+// Returns the extent in points of text, when set in font f at the given size. The returned value
 // accounts for kerning, word spacing, and horizontal scaling.
 func (c *ContentStream) ExtentFontPts(t []rune, f *Font, size float64) float64 {
 	return FUToPt(c.ExtentFontFU(t, f), size)
@@ -114,7 +114,7 @@ func (c *ContentStream) CenterH(t []rune, rect Rect) float64 {
 	return dif / 2
 }
 
-// Returns the y offset, in points, from the start of rect, needed to center a line of text vertically (based on the text's leading).
-func CenterV(leading float64, rect Rect) float64 {
-	return -(rect.URY - rect.LLY - leading) / 2
+// Returns the y offset, in points, from the start of rect, needed to center a line of text vertically based on the text's height.
+func CenterV(height float64, rect Rect) float64 {
+	return -(rect.URY - rect.LLY - height) / 2
 }

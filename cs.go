@@ -10,7 +10,7 @@ type ContentStream struct {
 	Filter
 	*GS
 	*TextObj
-	ExtGState
+	//TODO: ExtGState
 	gSStack []*GS        // Graphics state stack
 	stack   []stackState // used for recording the order of calls to QSave/QRestore and BeginText/EndText
 	Parent  *Page
@@ -65,13 +65,13 @@ func (c *ContentStream) BeginText() (EndText, error) {
 func (c *ContentStream) setRef(i int) { c.refnum = i }
 func (c *ContentStream) refNum() int  { return c.refnum }
 func (c *ContentStream) children() []obj {
-	if c.ExtGState.Dict != nil {
-		return []obj{&c.ExtGState}
-	}
+	//if c.ExtGState.Dict != nil {
+	//	return []obj{&c.ExtGState}
+	//}
 	return []obj{}
 }
 func (c *ContentStream) encode(w io.Writer) (int, error) {
-	if c.buf.Len() > 1<<32 {
+	if c.buf.Len() > 1024 {
 		c.Filter = Flate
 	}
 	var n int

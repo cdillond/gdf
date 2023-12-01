@@ -76,13 +76,13 @@ func (r resourceDict) String() string {
 		}
 		bldr.WriteString(">>\n")
 	}
-	if len(r.ExtGState) > 0 {
-		bldr.WriteString("/ExtGState <<\n")
-		for i, e := range r.ExtGState {
-			fmt.Fprintf(bldr, "/GS%d %d 0 R\n", i, e.refNum())
-		}
-		bldr.WriteString(">>\n")
-	}
+	//if len(r.ExtGState) > 0 {
+	//	bldr.WriteString("/ExtGState <<\n")
+	//	for i, e := range r.ExtGState {
+	//		fmt.Fprintf(bldr, "/GS%d %d 0 R\n", i, e.refNum())
+	//	}
+	//	bldr.WriteString(">>\n")
+	//}
 
 	//if len(r.XObject) != 0 {
 	//	bldr.WriteString("/XObject <<\n")

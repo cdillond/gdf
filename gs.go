@@ -65,7 +65,7 @@ const (
 
 func NewGS() *GS {
 	out := new(GS)
-	out.Scale = 100
+	out.HScale = 100
 	out.Matrix = NewMatrix()
 	return out
 }
@@ -144,6 +144,7 @@ func (c *ContentStream) SetFlattness(f float64) {
 	fmt.Fprintf(c.buf, "%f i\n", f)
 }
 
+/*
 func (c *ContentStream) XGraphicsState(e ExtGState) {
 	var i int
 	for ; i < len(c.Parent.ExtGState); i++ {
@@ -157,3 +158,4 @@ func (c *ContentStream) XGraphicsState(e ExtGState) {
 	c.ExtGState = e
 	fmt.Fprintf(c.buf, "/GS%d gs\n", i)
 }
+*/

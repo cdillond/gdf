@@ -26,7 +26,7 @@ func (c *ContentStream) CubicBezier1(x1, y1, x2, y2, x3, y3 float64) {
 }
 
 // Append a cubic Bézier curve to the current path; v. The curve extends from
-// the current point to (x3, y3), using the current point and (x2, y2) as the Bezier control points.
+// the current point to (x3, y3), using the current point and (x2, y2) as the Bézier control points.
 func (c *ContentStream) CubicBezier2(x2, y2, x3, y3 float64) {
 	switch c.PathState {
 	case NoPath, Clipping:

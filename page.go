@@ -16,10 +16,10 @@ type Page struct {
 	resourceDict
 }
 type resourceDict struct {
-	Fonts     []*Font // *Fonts
-	ExtGState []*ExtGState
+	Fonts []*Font // *Fonts
 	/*
 		TODO:
+		ExtGState []*ExtGState
 		ColorSpace
 		Pattern
 		Shading
@@ -77,9 +77,9 @@ func (p *Page) children() []obj {
 	for i := range p.resourceDict.Fonts {
 		out = append(out, p.resourceDict.Fonts[i])
 	}
-	for i := range p.resourceDict.ExtGState {
-		out = append(out, p.resourceDict.ExtGState[i])
-	}
+	//for i := range p.resourceDict.ExtGState {
+	//	out = append(out, p.resourceDict.ExtGState[i])
+	//}
 
 	//for i := range p.ResourceDict.XObject {
 	//	obj := Obj(p.ResourceDict.XObject[i])
