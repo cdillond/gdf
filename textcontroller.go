@@ -13,52 +13,52 @@ var (
 )
 
 type TextController struct {
-	src              []rune        // source text
-	f                FontFamily    // the set of fonts to be used. On each call to DrawText, the supplied ContentStream's font will be set to one of the fonts from f, according to the TextConroller's font weight state. The fonts need not be of the same actual family - chosen families are valid, too!
-	isBold, isItal   bool          // font weight state
-	curFont          *Font         // Used for calculating line widths, but not for actually writing the text.
-	fontSize         float64       // font size. On each call to DrawText, the supplied ContentStream's FontSize will be set to this value
-	leading          float64       // text leading. On each call to DrawText, the supplied ContentStream's Leading will be set to this value.
-	lineWidth        float64       // ideal line width in Font Units
-	a                Alignment     // paragraph alignment
-	j                Justification // paragraph justification style
-	firstIndent      float64       // indent of the first line of each paragraph
-	tokens           []token       // source text tokens
-	breakpoints      []int         // indices of forced breaks in k.tokens
-	lineWidths       []float64     // actual line widths, unjustified
-	adjs             []float64     // adjustments (in font units) to the spaces ('\x20') in each line
-	squishTolerance  float64       // maximum allowable squish factor for the spaces in each line. lower = tighter spacing. default = 4. values under 1.0 can result in overlapping text.
-	stretchTolerance float64       // maximum allowable stretch tolerance for the spaces in each line. higher = wider spacing. default = 10.
-	scolor, ncolor   Color
-	r                RenderMode
-	n                int // token index
-	ln               int // line index
+	src            []rune        // source text
+	f              FontFamily    // the set of fonts to be used. On each call to DrawText, the supplied ContentStream's font will be set to one of the fonts from f, according to the TextConroller's font weight state. The fonts need not be of the same actual family - chosen families are valid, too!
+	isBold, isItal bool          // font weight state
+	curFont        *Font         // Used for calculating line widths, but not for actually writing the text.
+	fontSize       float64       // font size. On each call to DrawText, the supplied ContentStream's FontSize will be set to this value
+	leading        float64       // text leading. On each call to DrawText, the supplied ContentStream's Leading will be set to this value.
+	lineWidth      float64       // ideal line width in Font Units
+	a              Alignment     // paragraph alignment
+	j              Justification // paragraph justification style
+	firstIndent    float64       // indent of the first line of each paragraph
+	tokens         []token       // source text tokens
+	breakpoints    []int         // indices of forced breaks in k.tokens
+	lineWidths     []float64     // actual line widths, unjustified
+	adjs           []float64     // adjustments (in font units) to the spaces ('\x20') in each line
+	tightness      float64       // the ratio of the minimum allowable space advance and the normal space advance in justified text
+	looseness      float64       // the ratio of the maximum allowable space advance and the normal space advance in justified text
+	scolor, ncolor Color
+	r              RenderMode
+	n              int // token index
+	ln             int // line index
 }
 
 type ControllerCfg struct {
 	Alignment
 	Justification
 	RenderMode
-	FontSize         float64
-	Leading          float64
-	IsIndented       bool
-	NColor, SColor   Color // default non-stroking and stroking colors
-	StretchTolerance float64
-	SquishTolerance  float64
-	IsBold, IsItal   bool
+	FontSize       float64
+	Leading        float64
+	IsIndented     bool
+	NColor, SColor Color   // default non-stroking and stroking colors
+	Looseness      float64 // the ratio of the maximum allowable space advance and the normal space advance in justified text
+	Tightness      float64 // the ratio of the minimum allowable space advance and the normal space advance in justified text
+	IsBold, IsItal bool
 }
 
 func NewControllerCfg(fontSize, leading float64) ControllerCfg {
 	return ControllerCfg{
-		Alignment:        Right,
-		Justification:    Justified,
-		FontSize:         fontSize,
-		Leading:          leading,
-		IsIndented:       true,
-		SColor:           nil,
-		NColor:           nil,
-		StretchTolerance: 5,
-		SquishTolerance:  .5,
+		Alignment:     Left,
+		Justification: Ragged,
+		FontSize:      fontSize,
+		Leading:       leading,
+		IsIndented:    false,
+		SColor:        nil,
+		NColor:        nil,
+		Looseness:     2,
+		Tightness:     .25,
 	}
 }
 
@@ -97,23 +97,30 @@ type FormatText []rune
 
 func NewTextController(src FormatText, lineWidth float64, f FontFamily, cfg ControllerCfg) (TextController, error) {
 	tc := TextController{
-		src:              src,
-		f:                f,
-		lineWidth:        lineWidth,
-		fontSize:         cfg.FontSize,
-		a:                cfg.Alignment,
-		j:                cfg.Justification,
-		squishTolerance:  cfg.SquishTolerance,
-		stretchTolerance: cfg.StretchTolerance,
-		leading:          cfg.Leading,
-		isBold:           cfg.IsBold,
-		isItal:           cfg.IsItal,
-		scolor:           cfg.SColor,
-		ncolor:           cfg.NColor,
-		r:                cfg.RenderMode,
+		src:       src,
+		f:         f,
+		lineWidth: PtToFU(lineWidth, cfg.FontSize),
+		fontSize:  cfg.FontSize,
+		a:         cfg.Alignment,
+		j:         cfg.Justification,
+		tightness: cfg.Tightness,
+		looseness: cfg.Looseness,
+		leading:   cfg.Leading,
+		isBold:    cfg.IsBold,
+		isItal:    cfg.IsItal,
+		scolor:    cfg.SColor,
+		ncolor:    cfg.NColor,
+		r:         cfg.RenderMode,
 	}
 	if tc.j == Ragged {
-		tc.squishTolerance = 0
+		tc.tightness = 0
+		tc.looseness = 1
+	}
+	if tc.j == Justified {
+		// stretch tolerance cannot be 0
+		if tc.looseness == 0 {
+			tc.looseness = .5
+		}
 	}
 	if tc.isBold && tc.isItal {
 		tc.curFont = f.BoldItal
@@ -131,18 +138,16 @@ func NewTextController(src FormatText, lineWidth float64, f FontFamily, cfg Cont
 	}
 
 	tc.tokens = tc.tokenize(tc.src)
-	breakpoints, lineWidths, adjs, err := tc.breakLines(tc.squishTolerance, tc.stretchTolerance)
+	breakpoints, lineWidths, adjs, err := tc.breakLines(tc.tightness, tc.looseness)
 	// keep trying until it's clear there's no acceptable solution
 	if err != nil {
-		if errors.Is(err, errTolerance) {
-			squish, stretch := tc.squishTolerance*1.25, tc.stretchTolerance*2
-			tc.squishTolerance = 1 / tc.squishTolerance
-			for squish < 1 && err != nil {
-				breakpoints, lineWidths, adjs, err = tc.breakLines(squish, stretch)
-				squish *= 2
-				stretch *= 2
-			}
+
+		for squish, stretch := tc.tightness*1.25, tc.looseness*2; squish < 1 && errors.Is(err, errTolerance); {
+			breakpoints, lineWidths, adjs, err = tc.breakLines(squish, stretch)
+			squish *= 1.25
+			stretch *= 2
 		}
+
 		if err != nil {
 			return *new(TextController), err
 		}
@@ -153,18 +158,21 @@ func NewTextController(src FormatText, lineWidth float64, f FontFamily, cfg Cont
 	return tc, nil
 }
 
-func (tc *TextController) DrawText(c *ContentStream, area Rect) (error, bool) {
+func (tc *TextController) DrawText(c *ContentStream, area Rect) (Point, bool, error) {
 	if PtToFU(area.Width(), tc.fontSize) < tc.lineWidth {
-		return fmt.Errorf("target area must be at least as wide as the max line width"), false
+		return *new(Point), false, fmt.Errorf("target area must be at least as wide as the max line width")
 	}
 	if tc.n >= len(tc.tokens) {
-		return fmt.Errorf("src text buffer is empty"), false
+		return *new(Point), false, fmt.Errorf("src text buffer is empty")
 	}
 	if tc.leading <= 0 {
-		return fmt.Errorf("font leading must be greater than 0"), false
+		return *new(Point), false, fmt.Errorf("font leading must be greater than 0")
 	}
 	maxLines := area.Height() / tc.leading
-	c.QSave()
+	if maxLines < 1 {
+		return *new(Point), false, fmt.Errorf("target area must be at least as tall as the font leading")
+	}
+	//c.QSave()
 	if c.Leading != tc.leading {
 		c.SetLeading(tc.leading)
 	}
@@ -183,20 +191,21 @@ func (tc *TextController) DrawText(c *ContentStream, area Rect) (error, bool) {
 	}
 	c.TextOffset(area.LLX, area.URY-tc.leading)
 	if err != nil {
-		c.QRestore()
-		return err, false
+		//c.QRestore()
+		return *new(Point), false, err
 	}
 	tc.writeLines(c, min(int(maxLines), len(tc.breakpoints)))
+	endPt := c.RawTextCursor()
 	err = et()
 	if err != nil {
-		c.QRestore()
-		return err, false
+		//c.QRestore()
+		return *new(Point), false, err
 	}
-	err = c.QRestore()
-	if err != nil {
-		return err, false
-	}
-	return nil, tc.n == len(tc.tokens)
+	//err = c.QRestore()
+	//if err != nil {
+	//	return *new(Point), false, err
+	//}
+	return endPt, tc.n == len(tc.tokens), nil
 }
 
 type token interface {
@@ -567,12 +576,12 @@ func (tc *TextController) writeLines(c *ContentStream, numLines int) {
 		if _, ok := breaks[i]; ok {
 			var dif float64
 			var alignAdj float64
-			if tc.adjs[lineCount] == 0 && (tc.a == Center || tc.a == Left) && len(run) != 0 {
+			if tc.adjs[lineCount] == 0 && (tc.a == Center || tc.a == Right) && len(run) != 0 {
 				dif = tc.lineWidth - tc.lineWidths[lineCount]
 				switch tc.a {
 				case Center:
 					alignAdj = dif / 2
-				case Left:
+				case Right:
 					alignAdj = dif
 				}
 				c.Concat(Translate(FUToPt(alignAdj, tc.fontSize), 0))
@@ -612,12 +621,12 @@ func (tc *TextController) writeLines(c *ContentStream, numLines int) {
 			if len(run) != 0 {
 				var dif float64
 				var alignAdj float64
-				if tc.adjs[lineCount] == 0 && (tc.a == Center || tc.a == Left) && len(run) != 0 {
+				if tc.adjs[lineCount] == 0 && (tc.a == Center || tc.a == Right) && len(run) != 0 {
 					dif = tc.lineWidth - tc.lineWidths[lineCount]
 					switch tc.a {
 					case Center:
 						alignAdj = dif / 2
-					case Left:
+					case Right:
 						alignAdj = dif
 					}
 					c.Concat(Translate(FUToPt(alignAdj, tc.fontSize), 0))
@@ -650,12 +659,12 @@ func (tc *TextController) writeLines(c *ContentStream, numLines int) {
 			if len(run) != 0 {
 				var dif float64
 				var alignAdj float64
-				if tc.adjs[lineCount] == 0 && (tc.a == Center || tc.a == Left) && len(run) != 0 {
+				if tc.adjs[lineCount] == 0 && (tc.a == Center || tc.a == Right) && len(run) != 0 {
 					dif = tc.lineWidth - tc.lineWidths[lineCount]
 					switch tc.a {
 					case Center:
 						alignAdj = dif / 2
-					case Left:
+					case Right:
 						alignAdj = dif
 					}
 					c.Concat(Translate(FUToPt(alignAdj, tc.fontSize), 0))

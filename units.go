@@ -16,6 +16,16 @@ type Rect struct {
 	LLX, LLY, URX, URY float64
 }
 
+// Returns a Rect where ll is the lower left vertex and ur is the upper right vertex.
+func NewRect(ll, ur Point) Rect {
+	return Rect{
+		LLX: ll.X,
+		LLY: ll.Y,
+		URX: ur.X,
+		URY: ur.Y,
+	}
+}
+
 var (
 	A5        = Rect{0, 0, 148 * Mm, 210 * Mm}
 	A4        = Rect{0, 0, 210 * Mm, 297 * Mm}
@@ -54,8 +64,11 @@ func (r Rect) Bounds(m Margins) Rect {
 	}
 }
 
+// Returns r's height.
 func (r Rect) Height() float64 { return r.URY - r.LLY }
-func (r Rect) Width() float64  { return r.URX - r.LLX }
+
+// Returns r's width.
+func (r Rect) Width() float64 { return r.URX - r.LLX }
 
 // Returns the length of r's diagonal.
 func (r Rect) Diagonal() float64 {

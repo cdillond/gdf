@@ -104,7 +104,7 @@ func Mul(m1, m2 Matrix) Matrix {
 	return Matrix{A: C00, B: C01, C: C10, D: C11, E: C20, F: C21}
 }
 
-// Returns the inverse of m and an error. If m has no inverse, an empty Matrix and a non-nil error is returned.
+// Returns the inverse of m and an error. If m has no inverse, an empty Matrix and a non-nil error are returned.
 func (m Matrix) Inverse() (Matrix, error) {
 	det := m.A*m.D - m.C*m.B
 	if det == 0 {

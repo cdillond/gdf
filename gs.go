@@ -63,17 +63,17 @@ const (
 	Clipping
 )
 
-func NewGS() *GS {
+func NewGS() GS {
 	out := new(GS)
 	out.HScale = 100
 	out.Matrix = NewMatrix()
-	return out
+	return *out
 }
 
 // QSave pushes the current GS (graphics sate) to c's GSStack (graphics state stack).
 func (c *ContentStream) QSave() {
-	g := *c.GS
-	c.gSStack = append(c.gSStack, &g)
+	g := c.GS
+	c.gSStack = append(c.gSStack, g)
 	c.stack = append(c.stack, gState)
 	c.buf.Write([]byte("q\n"))
 }
