@@ -59,7 +59,7 @@ func Subset(f *sfnt.Font, src []byte, cutset map[rune]struct{}) ([]byte, error) 
 	srcR := bytes.NewReader(src)
 	ld, err := loader.NewLoader(srcR)
 	if err != nil {
-		return *new([]byte), err
+		return nil, err
 	}
 
 	head, err := ld.RawTable(loader.Tag(Head))
@@ -68,22 +68,22 @@ func Subset(f *sfnt.Font, src []byte, cutset map[rune]struct{}) ([]byte, error) 
 	}
 	headP, _, err := tables.ParseHead(head)
 	if err != nil {
-		return *new([]byte), err
+		return nil, err
 	}
 	isLong := headP.IndexToLocFormat == 1
 
 	loca, err := ld.RawTable(loader.Tag(Loca))
 	if err != nil {
-		return *new([]byte), err
+		return nil, err
 	}
 	locaP, err := tables.ParseLoca(loca, f.NumGlyphs(), isLong)
 	if err != nil {
-		return *new([]byte), err
+		return nil, err
 	}
 
 	glyf, err := ld.RawTable(loader.Tag(Glyf))
 	if err != nil {
-		return *new([]byte), err
+		return nil, err
 	}
 	// include glyphs that are components of composite glyphs
 	var composits = []uint32{}
@@ -165,7 +165,7 @@ func Subset(f *sfnt.Font, src []byte, cutset map[rune]struct{}) ([]byte, error) 
 	// https://learn.microsoft.com/en-us/typography/opentype/spec/maxp
 	maxp, err := ld.RawTable(loader.Tag(Maxp))
 	if err != nil {
-		return *new([]byte), err
+		return nil, err
 	}
 	if len(maxp) >= 6 {
 		// we can proceed
@@ -199,7 +199,7 @@ func Subset(f *sfnt.Font, src []byte, cutset map[rune]struct{}) ([]byte, error) 
 		default:
 			cnt, err := ld.RawTable(loader.Tag(tag))
 			if err != nil {
-				return *new([]byte), err
+				return nil, err
 			}
 			tbl[i] = loader.Table{Content: cnt, Tag: loader.Tag(tag)}
 		}

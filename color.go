@@ -52,8 +52,8 @@ type GColor float64
 
 const (
 	Black GColor = 0
-	White GColor = 1
 	Gray  GColor = .5
+	White GColor = 1
 )
 
 func (g GColor) color() {}
