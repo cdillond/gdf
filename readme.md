@@ -32,7 +32,7 @@ if the Current Transformation Matrix were [[1 0 0][2 0 0][0 0 1]], to draw a lin
         panic(err)
     }
     defer f.Close()
-    pdf.Write(f) // write the PDF to out.pdf
+    pdf.WriteTo(f) // write the PDF to out.pdf
 
 ```
 

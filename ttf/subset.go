@@ -64,7 +64,7 @@ func Subset(f *sfnt.Font, src []byte, cutset map[rune]struct{}) ([]byte, error) 
 
 	head, err := ld.RawTable(loader.Tag(Head))
 	if err != nil {
-		return *new([]byte), err
+		return nil, err
 	}
 	headP, _, err := tables.ParseHead(head)
 	if err != nil {

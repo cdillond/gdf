@@ -446,7 +446,7 @@ func (tc *TextController) breakLines(squishTolerance, stretchTolerance float64) 
 			curWidth += v.Width()
 			runWidth += v.Width()
 			if runWidth > tc.lineWidth {
-				return *new([]int), *new([]float64), *new([]float64), fmt.Errorf("%w: %s", errWordSize, string(v.chars))
+				return nil, nil, nil, fmt.Errorf("%w: %s", errWordSize, string(v.chars))
 			}
 		case skip:
 			runWidth = 0
@@ -501,7 +501,7 @@ func (tc *TextController) breakLines(squishTolerance, stretchTolerance float64) 
 			}
 			// unable to proceed
 			if lineStart == len(activeNodes) {
-				return []int{}, []float64{}, []float64{}, fmt.Errorf("%w, squish: %f stretch: %f", errTolerance, squishTolerance, stretchTolerance)
+				return nil, nil, nil, fmt.Errorf("%w, squish: %f stretch: %f", errTolerance, squishTolerance, stretchTolerance)
 			}
 		case fWeight:
 			switch v {
@@ -520,7 +520,7 @@ func (tc *TextController) breakLines(squishTolerance, stretchTolerance float64) 
 			runWidth = 0
 			// this should already have been caught, but it might help to do a bounds check just to be safe
 			if len(activeNodes) == 0 {
-				return []int{}, []float64{}, []float64{}, fmt.Errorf("%w, squish: %f stretch: %f", errTolerance, squishTolerance, stretchTolerance)
+				return nil, nil, nil, fmt.Errorf("%w, squish: %f stretch: %f", errTolerance, squishTolerance, stretchTolerance)
 			}
 			// the remaining active node should be the one with the optimal endpoint
 			endNode := activeNodes[len(activeNodes)-1]
