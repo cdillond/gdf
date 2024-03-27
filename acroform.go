@@ -3,6 +3,8 @@ package gdf
 import (
 	"fmt"
 	"io"
+
+	"golang.org/x/text/encoding/charmap"
 )
 
 // The acroform type represents a document-level parent form. There can be only one acroform per document, but it can have mulitple fields.
@@ -166,8 +168,12 @@ func (p *Page) AddAcroField(w *Widget, f *AcroField, dst Rect) error {
 	if w.AcroType == AcroText {
 		if cfg, ok := w.cfg.(AcroTextCfg); ok {
 			// Quick way to ensure all /WinAnsiEncoding glyphs are included
-			for r := 0; r < 256; r++ {
-				GlyphAdvance(rune(r), cfg.Font)
+			runes := make([]rune, 0, 256)
+			for c := 0; c < 256; c++ {
+				runes = append(runes, charmap.Windows1252.DecodeByte(byte(c)))
+			}
+			for i := range runes {
+				GlyphAdvance(runes[i], cfg.Font)
 			}
 			fonts := f.parent.resources.Fonts
 			var i int
