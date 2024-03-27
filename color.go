@@ -1,50 +1,64 @@
 package gdf
 
-import "fmt"
-
-type ColorSpace Name
+type ColorSpace uint
 
 const (
-	DeviceGray ColorSpace = "DeviceGray"
-	DeviceRGB  ColorSpace = "DeviceRGB"
-	DeviceCMYK ColorSpace = "DeviceCMYK"
-	Pattern    ColorSpace = "Pattern"
+	DeviceGray ColorSpace = iota
+	DeviceRGB
+	DeviceCMYK
+	PatternCS
+	invalidColorSpace
 )
 
+var colorSpaces = [...]string{"/DeviceGray", "/DeviceRGB", "/DeviceCMYK", "/Pattern"}
+var _ = (int8(invalidColorSpace) - int8(len(colorSpaces))) << 8
+
+func (c ColorSpace) isValid() bool { return c < invalidColorSpace }
+func (c ColorSpace) String() string {
+	if c.isValid() {
+		return colorSpaces[c]
+	}
+	return ""
+}
+
 type Color interface {
-	color() // this is required here to prevent user-defined color types, but it isn't actually used
+	color() []float64
 }
 
 // Sets c's stroking color (SColor) to cl and sets its SColorSpace to cl's ColorSpace.
 func (c *ContentStream) SetColorStroke(cl Color) {
-	c.SColor = cl
 	switch v := cl.(type) {
 	case GColor:
-		c.SColorSpace = DeviceGray
-		fmt.Fprintf(c.buf, "%f G\n", v)
+		c.NColorSpace = DeviceGray
+		c.buf = cmdf(c.buf, op_G, float64(v))
 	case RGBColor:
-		c.SColorSpace = DeviceRGB
-		fmt.Fprintf(c.buf, "%f %f %f RG\n", v.R, v.G, v.B)
+		c.NColorSpace = DeviceRGB
+		c.buf = cmdf(c.buf, op_RG, v.R, v.G, v.B)
 	case CMYKColor:
-		c.SColorSpace = DeviceCMYK
-		fmt.Fprintf(c.buf, "%f %f %f %f K\n", v.C, v.M, v.Y, v.K)
+		c.NColorSpace = DeviceCMYK
+		c.buf = cmdf(c.buf, op_K, v.C, v.M, v.Y, v.K)
+	default:
+		return
 	}
+	c.NColor = cl
 }
 
 // Sets c's non-stroking color (NColor) to cl and sets its NColorSpace to cl's ColorSpace.
 func (c *ContentStream) SetColor(cl Color) {
-	c.NColor = cl
 	switch v := cl.(type) {
 	case GColor:
 		c.NColorSpace = DeviceGray
-		fmt.Fprintf(c.buf, "%f g\n", v)
+		c.buf = cmdf(c.buf, op_g, float64(v))
 	case RGBColor:
 		c.NColorSpace = DeviceRGB
-		fmt.Fprintf(c.buf, "%f %f %f rg\n", v.R, v.G, v.B)
+		c.buf = cmdf(c.buf, op_rg, v.R, v.G, v.B)
 	case CMYKColor:
 		c.NColorSpace = DeviceCMYK
-		fmt.Fprintf(c.buf, "%f %f %f %f k\n", v.C, v.M, v.Y, v.K)
+		c.buf = cmdf(c.buf, op_k, v.C, v.M, v.Y, v.K)
+	default:
+		return
 	}
+	c.NColor = cl
 }
 
 // Grayscale color; must be in [0,1].
@@ -56,14 +70,14 @@ const (
 	White GColor = 1
 )
 
-func (g GColor) color() {}
+func (g GColor) color() []float64 { return []float64{float64(g)} }
 
 // RGB Color; R,G, and B must be in [0,1].
 type RGBColor struct {
 	R, G, B float64
 }
 
-func (r RGBColor) color() {}
+func (r RGBColor) color() []float64 { return []float64{r.R, r.G, r.B} }
 
 var (
 	Red   = RGBColor{1, 0, 0}
@@ -76,7 +90,7 @@ type CMYKColor struct {
 	C, M, Y, K float64
 }
 
-func (c CMYKColor) color() {}
+func (c CMYKColor) color() []float64 { return []float64{c.C, c.M, c.Y, c.K} }
 
 var (
 	Cyan      = CMYKColor{1, 0, 0, 0}

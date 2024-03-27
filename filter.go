@@ -1,9 +1,11 @@
 package gdf
 
 import (
-	"bytes"
-	"compress/zlib"
+
+	//"compress/zlib"
 	"io"
+
+	"github.com/klauspost/compress/zlib"
 )
 
 type Filter uint
@@ -11,13 +13,36 @@ type Filter uint
 const (
 	NoFilter Filter = iota
 	Flate
+	invalidFilter
 )
 
-func flateCompress(w io.Writer, in *bytes.Buffer) (int, error) {
-	zw := zlib.NewWriter(w)
-	n, err := in.WriteTo(zw)
-	if err != nil {
-		return 0, err
+var filters = [...]string{"", "/FlateDecode"}
+
+func (f Filter) isValid() bool  { return f < invalidFilter }
+func (f Filter) String() string { return filters[oneif(f.isValid())] }
+
+// n records the number of bytes written to w; the io.Writer.Write(p) method returns the number of bytes from p consumed by the writer.
+// This is needed to determine the length of the encoded portion of a compressed resource stream.
+type cwriter struct {
+	w io.Writer
+	n int
+}
+
+func (c *cwriter) Write(p []byte) (int, error) {
+	t, err := c.w.Write(p)
+	c.n += t
+	return t, err
+}
+
+// Returns the number of (compressed) bytes written to w, not the number of bytes written from src.
+func flateCompress(w io.Writer, src []byte) (int, error) {
+	c := &cwriter{
+		w: w,
 	}
-	return int(n), zw.Flush()
+	zw := zlib.NewWriter(c)
+	_, err := zw.Write(src)
+	if err != nil {
+		return c.n, err
+	}
+	return c.n, zw.Close()
 }

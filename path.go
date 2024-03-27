@@ -1,17 +1,25 @@
 package gdf
 
-import "fmt"
-
 // Begin a new path starting at (x, y); m.
 func (c *ContentStream) MoveTo(x, y float64) {
 	c.PathState = Building
 	c.CurPt = Point{x, y}
-	fmt.Fprintf(c.buf, "%f %f m\n", x, y)
+	c.buf = cmdf(c.buf, op_m, x, y)
 }
 
-// Append a straight line from the current point to (x, y); l.
+// Append a straight line from the current point to (x, y), which becomes the new current point; l.
 func (c *ContentStream) LineTo(x, y float64) {
-	fmt.Fprintf(c.buf, "%f %f l\n", x, y)
+	if c.PathState == Building {
+		c.CurPt = Point{x, y}
+		c.buf = cmdf(c.buf, op_l, x, y)
+	}
+}
+
+// A convenience function that strokes a line from Point{x1,y1} to Point{x2,y2}.
+func (c *ContentStream) DrawLine(x1, y1, x2, y2 float64) {
+	c.MoveTo(x1, y1)
+	c.LineTo(x2, y2)
+	c.Stroke()
 }
 
 // Append a cubic Bézier curve to the current path; c. The curve extends
@@ -21,7 +29,7 @@ func (c *ContentStream) CubicBezier1(x1, y1, x2, y2, x3, y3 float64) {
 	case NoPath, Clipping:
 		return
 	default:
-		fmt.Fprintf(c.buf, "%f %f %f %f %f %f c\n", x1, y1, x2, y2, x3, y3)
+		c.buf = cmdf(c.buf, op_c, x1, y1, x2, y2, x3, y3)
 	}
 }
 
@@ -32,7 +40,7 @@ func (c *ContentStream) CubicBezier2(x2, y2, x3, y3 float64) {
 	case NoPath, Clipping:
 		return
 	default:
-		fmt.Fprintf(c.buf, "%f %f %f %f v\n", x2, y2, x3, y3)
+		c.buf = cmdf(c.buf, op_v, x2, y2, x3, y3)
 	}
 }
 
@@ -43,7 +51,7 @@ func (c *ContentStream) CubicBezier3(x1, y1, x3, y3 float64) {
 	case NoPath, Clipping:
 		return
 	default:
-		fmt.Fprintf(c.buf, "%f %f %f %f c", x1, y1, x3, y3)
+		c.buf = cmdf(c.buf, op_y, x1, y1, x3, y3)
 	}
 }
 
@@ -51,8 +59,8 @@ func (c *ContentStream) CubicBezier3(x1, y1, x3, y3 float64) {
 func (c *ContentStream) ClosePath() {
 	switch c.PathState {
 	case Building, Clipping:
-		c.buf.Write([]byte("h\n"))
 		c.PathState = Building
+		c.buf = append(c.buf, op_h...)
 	}
 }
 
@@ -60,9 +68,9 @@ func (c *ContentStream) ClosePath() {
 func (c *ContentStream) Stroke() {
 	switch c.PathState {
 	case Building, Clipping:
-		c.buf.Write([]byte("S\n"))
 		c.PathState = NoPath
 		c.CurPt = *new(Point)
+		c.buf = append(c.buf, op_S...)
 	}
 }
 
@@ -70,9 +78,9 @@ func (c *ContentStream) Stroke() {
 func (c *ContentStream) ClosePathStroke() {
 	switch c.PathState {
 	case Building, Clipping:
-		c.buf.Write([]byte("s\n"))
 		c.PathState = NoPath
 		c.CurPt = *new(Point)
+		c.buf = append(c.buf, op_s...)
 	}
 
 }
@@ -81,9 +89,9 @@ func (c *ContentStream) ClosePathStroke() {
 func (c *ContentStream) Fill() {
 	switch c.PathState {
 	case Building, Clipping:
-		c.buf.Write([]byte("f\n"))
 		c.PathState = NoPath
 		c.CurPt = *new(Point)
+		c.buf = append(c.buf, op_f...)
 	}
 }
 
@@ -91,9 +99,9 @@ func (c *ContentStream) Fill() {
 func (c *ContentStream) FillEO() {
 	switch c.PathState {
 	case Building, Clipping:
-		c.buf.Write([]byte("f*\n"))
 		c.PathState = NoPath
 		c.CurPt = *new(Point)
+		c.buf = append(c.buf, op_f_X...)
 	}
 }
 
@@ -101,9 +109,9 @@ func (c *ContentStream) FillEO() {
 func (c *ContentStream) FillStroke() {
 	switch c.PathState {
 	case Building, Clipping:
-		c.buf.Write([]byte("B\n"))
 		c.PathState = NoPath
 		c.CurPt = *new(Point)
+		c.buf = append(c.buf, op_B...)
 	}
 }
 
@@ -111,9 +119,9 @@ func (c *ContentStream) FillStroke() {
 func (c *ContentStream) FillEOStroke() {
 	switch c.PathState {
 	case Building, Clipping:
-		c.buf.Write([]byte("B*\n"))
 		c.PathState = NoPath
 		c.CurPt = *new(Point)
+		c.buf = append(c.buf, op_B_X...)
 	}
 }
 
@@ -121,9 +129,9 @@ func (c *ContentStream) FillEOStroke() {
 func (c *ContentStream) ClosePathFillStroke() {
 	switch c.PathState {
 	case Building, Clipping:
-		c.buf.Write([]byte("b\n"))
 		c.PathState = NoPath
 		c.CurPt = *new(Point)
+		c.buf = append(c.buf, op_b...)
 	}
 }
 
@@ -131,9 +139,9 @@ func (c *ContentStream) ClosePathFillStroke() {
 func (c *ContentStream) ClosePathFillEOStroke() {
 	switch c.PathState {
 	case Building, Clipping:
-		c.buf.Write([]byte("b*\n"))
 		c.PathState = NoPath
 		c.CurPt = *new(Point)
+		c.buf = append(c.buf, op_b_X...)
 	}
 }
 
@@ -141,9 +149,9 @@ func (c *ContentStream) ClosePathFillEOStroke() {
 func (c *ContentStream) EndPath() {
 	switch c.PathState {
 	case Building, Clipping:
-		c.buf.Write([]byte("n\n"))
 		c.PathState = NoPath
 		c.CurPt = *new(Point)
+		c.buf = append(c.buf, op_n...)
 	}
 }
 
@@ -151,14 +159,12 @@ func (c *ContentStream) EndPath() {
 func (c *ContentStream) Re(x, y, w, h float64) {
 	c.PathState = Building
 	c.CurPt = Point{x, y}
-	fmt.Fprintf(c.buf, "%f %f %f %f re\n", x, y, w, h)
+	c.buf = cmdf(c.buf, op_re, x, y, w, h)
 }
 
 // Append r to the current path; a possibly more convenient version of Re.
 func (c *ContentStream) Re2(r Rect) {
-	c.PathState = Building
-	c.CurPt = Point{r.LLX, r.LLY}
-	fmt.Fprintf(c.buf, "%f %f %f %f re\n", r.LLX, r.LLY, r.URX-r.LLX, r.URY-r.LLY)
+	c.Re(r.LLX, r.LLY, r.URX-r.LLX, r.URY-r.LLY)
 }
 
 // Clip path (non-zero winding). A clipping path operator. May appear after the last path
@@ -167,7 +173,7 @@ func (c *ContentStream) Clip() {
 	switch c.PathState {
 	case Building:
 		c.PathState = Clipping
-		c.buf.Write([]byte("W\n"))
+		c.buf = append(c.buf, op_W...)
 	}
 }
 
@@ -177,6 +183,6 @@ func (c *ContentStream) ClipEO() {
 	switch c.PathState {
 	case Building:
 		c.PathState = Clipping
-		c.buf.Write([]byte("W*\n"))
+		c.buf = append(c.buf, op_W_X...)
 	}
 }

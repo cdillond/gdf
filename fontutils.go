@@ -8,7 +8,7 @@ import (
 
 func calculateWidths(f *Font) {
 	bs := make([]int, 256)
-	for char, adv := range f.Charset {
+	for char, adv := range f.charset {
 		b, err := f.enc.Bytes([]byte(string(char)))
 		if err == nil && len(b) == 1 {
 			bs[b[0]] = adv
@@ -25,30 +25,30 @@ func calculateWidths(f *Font) {
 			}
 		}
 	}
-	f.FirstChar = fc
-	f.LastChar = lc
-	f.Widths = bs[f.FirstChar : f.LastChar+1]
+	f.firstChar = fc
+	f.lastChar = lc
+	f.widths = bs[f.firstChar : f.lastChar+1]
 }
 
 // Returns the advance of r in font units.
 func GlyphAdvance(r rune, f *Font) int {
-	adv, ok := f.Charset[r]
+	adv, ok := f.charset[r]
 	if ok {
 		return adv
 	}
 	gid, err := f.GlyphIndex(nil, r)
 	if err != nil || gid == 0 {
 		// try an encoded version instead
-		f.Charset[r] = 0
+		f.charset[r] = 0
 		return 0
 	}
 
 	adv26_6, err := f.GlyphAdvance(f.buf, gid, 1000, font.HintingNone)
 	if err != nil {
-		f.Charset[r] = 0
+		f.charset[r] = 0
 		return 0
 	}
-	f.Charset[r] = int(adv26_6)
+	f.charset[r] = int(adv26_6)
 	return int(adv26_6)
 }
 

@@ -1,22 +1,28 @@
 package gdf
 
 import (
-	"bytes"
 	"errors"
-	"fmt"
 	"io"
 )
 
 type Page struct {
 	refnum   int
 	MediaBox Rect
-	CropBox  Rect // "the rectangle of user space corresponding to the visible area of the intended output medium (display window or printed page)"
-	Content  []*ContentStream
+	CropBox  Rect           // "the rectangle of user space corresponding to the visible area of the intended output medium (display window or printed page)"
+	Content  *ContentStream // This will be only a single content stream so that we don't need to worry about the effects of concatenating multiple streams.
 	Margins
-	resourceDict
+	parent *pages
 }
+
+// A resourceDict holds references to resources used by the content stream. When the PDF is built, this is promoted to part of the Page object dictionary.
+// It is easier to group the resourceDict with the ContentStream, since doing so allows for Form XObjects to include resources of their own.
 type resourceDict struct {
 	Fonts []*Font // *Fonts
+	XObjs []*XObject
+
+	Widgets    []*Widget
+	TextAnnots []*TextAnnot
+
 	/*
 		TODO:
 		ExtGState []*ExtGState
@@ -29,13 +35,45 @@ type resourceDict struct {
 	*/
 }
 
+func (r resourceDict) bytes() []byte {
+	if len(r.Fonts) == 0 && len(r.XObjs) == 0 {
+		return []byte("<<>>")
+	}
+
+	fields := make([]field, 0, 2)
+	// Font Subdict
+	if len(r.Fonts) > 0 {
+		ffields := make([]field, len(r.Fonts))
+		for i := range r.Fonts {
+			ffields[i] = field{"/F" + itoa(i), iref(r.Fonts[i].id())}
+		}
+		fields = append(fields, field{
+			"/Font", subdict(128, ffields),
+		})
+	}
+	if len(r.XObjs) > 0 {
+		xfields := make([]field, len(r.XObjs))
+		for i := range r.XObjs {
+			xfields[i] = field{"/P" + itoa(i), iref(r.XObjs[i].id())}
+		}
+		fields = append(fields, field{
+			"/XObject", subdict(128, xfields),
+		})
+	}
+	return subdict(256, fields)
+}
+
+// See Table 31 — Entries in a page object.
 func NewPage(pageSize Rect, margins Margins) Page {
-	return Page{MediaBox: pageSize, CropBox: pageSize, Margins: margins}
+	p := Page{MediaBox: pageSize, CropBox: pageSize, Margins: margins}
+	p.Content = p.newContentStream()
+	return p
 }
 
 // Appends page to p.
 func (p *PDF) AppendPage(page *Page) {
 	p.catalog.Pages.P = append(p.catalog.Pages.P, page)
+	page.parent = p.catalog.Pages
 }
 
 // Inserts page at index i of the PDF's internal page structure.
@@ -70,38 +108,62 @@ func (p *PDF) ReplacePage(page *Page, i int) error {
 // form space (for form XObjects)
 // pattern space (patern matrix)
 
-func (p *Page) setRef(i int) { p.refnum = i }
-func (p *Page) refNum() int  { return p.refnum }
+func (p *Page) mark(i int) { p.refnum = i }
+func (p *Page) id() int    { return p.refnum }
 func (p *Page) children() []obj {
-	out := make([]obj, 0, len(p.resourceDict.Fonts)+len(p.Content)) //+len(p.ResourceDict.XObject))
-	for i := range p.resourceDict.Fonts {
-		out = append(out, p.resourceDict.Fonts[i])
+	out := make([]obj, 0, len(p.Content.resources.Fonts)+len(p.Content.resources.XObjs)+1+(len(p.Content.resources.Widgets)))
+	for i := range p.Content.resources.Fonts {
+		out = append(out, p.Content.resources.Fonts[i])
 	}
-	//for i := range p.resourceDict.ExtGState {
-	//	out = append(out, p.resourceDict.ExtGState[i])
-	//}
-
-	//for i := range p.ResourceDict.XObject {
-	//	obj := Obj(p.ResourceDict.XObject[i])
-	//	out = append(out, &obj)
-	//}
-	for i := range p.Content {
-		out = append(out, p.Content[i])
+	for i := range p.Content.resources.XObjs {
+		out = append(out, p.Content.resources.XObjs[i])
 	}
-	return out
+	for i := range p.Content.resources.TextAnnots {
+		out = append(out, p.Content.resources.TextAnnots[i])
+	}
+	for i := range p.Content.resources.Widgets {
+		out = append(out, p.Content.resources.Widgets[i])
+	}
+	return append(out, p.Content)
 }
 
 func (p *Page) encode(w io.Writer) (int, error) {
-	return fmt.Fprintf(w, "<<\n/Type /Page\n/Parent 2 0 R\n/MediaBox [%f %f %f %f]\n/CropBox [%f %f %f %f]\n/Contents %d 0 R\n/Resources %s>>\n",
-		p.MediaBox.LLX, p.MediaBox.LLY, p.MediaBox.URX, p.MediaBox.URY, p.CropBox.LLX, p.CropBox.LLY, p.CropBox.URX, p.CropBox.URY, p.Content[0].refNum(), p.resourceDict.rep())
+	var fields []field
+
+	if len(p.Content.resources.Widgets) > 0 {
+		a := make([]string, 0, len(p.Content.resources.Widgets)+len(p.Content.resources.TextAnnots))
+		for _, an := range p.Content.resources.TextAnnots {
+			a = append(a, iref(an.id()))
+			//a[i] = iref(p.C.resources.Annots[i].id())
+		}
+		for _, an := range p.Content.resources.Widgets {
+			a = append(a, iref(an.id()))
+			//a[i] = iref(p.C.resources.Annots[i].id())
+		}
+		fields = append(fields, field{
+			"/Annots", a,
+		})
+	}
+
+	return w.Write(dict(512, append([]field{
+		{"/Type", "/Page"},
+		{"/Parent", iref(p.parent.id())},
+		{"/MediaBox", p.MediaBox},
+		{"/CropBox", p.CropBox},
+		{"/Contents", iref(p.Content.id())},
+		{"/Resources", p.Content.resources.bytes()},
+	}, fields...)))
 }
 
-func (p *Page) NewContentStream() *ContentStream {
+func (p *Page) newContentStream() *ContentStream {
 	cs := new(ContentStream)
-	p.Content = append(p.Content, cs)
-	cs.Parent = p
-	cs.buf = new(bytes.Buffer)
+	cs.buf = make([]byte, 0, 4096)
 	cs.GS = NewGS()
 	cs.Filter = Flate
 	return cs
+}
+
+func (p *Page) Annotate(t *TextAnnot, r Rect) {
+	t.rect = r
+	p.Content.resources.TextAnnots = append(p.Content.resources.TextAnnots, t)
 }

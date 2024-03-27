@@ -17,8 +17,8 @@ func NewExtGState() ExtGState {
 	}
 }
 
-func (e *ExtGState) setRef(i int) { e.refnum = i }
-func (e *ExtGState) refNum() int  { return e.refnum }
+func (e *ExtGState) mark(i int) { e.refnum = i }
+func (e *ExtGState) id() int  { return e.refnum }
 func (e *ExtGState) children() []obj {
 	out := []obj{}
 	for _, val := range e.Dict {

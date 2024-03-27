@@ -71,6 +71,16 @@ type Point struct {
 	X, Y float64
 }
 
+// Returns a Rect where p is the lower left vertex, w is the width, and h is the height.
+func (p Point) ToRect(w, h float64) Rect {
+	return Rect{
+		LLX: p.X,
+		LLY: p.Y,
+		URX: p.X + w,
+		URY: p.Y + h,
+	}
+}
+
 // Returns the Point resulting from the transformation of p by m.
 func Transform(p Point, m Matrix) Point {
 	return Point{
@@ -121,20 +131,3 @@ func (m Matrix) Inverse() (Matrix, error) {
 		F: -(m.A*m.F - m.E*m.B) / det,
 	}, nil
 }
-
-// Returns true if all editable fields of the matrix are set to 0. Empty matrices should be
-// avoided, as they can result in undefined behavior.
-//func (m *Matrix) IsEmpty() bool {
-//	return m.A == 0 && m.A == m.B && m.B == m.C && m.C == m.D && m.D == m.E && m.E == m.F
-//}
-
-// Sets m equal to the Identity Matrix, Matrix{A:1,B:0,C:0,D:1,E:0,F:0}. (Values for the third
-// column are always implicitly [0,0,1]).
-//func (m *Matrix) SetIdentity() {
-//	m.A = 1
-//	m.B = 0
-//	m.C = 0
-//	m.D = 1
-//	m.E = 0
-//	m.F = 0
-//}

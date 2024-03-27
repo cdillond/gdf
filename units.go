@@ -26,6 +26,10 @@ func NewRect(ll, ur Point) Rect {
 	}
 }
 
+func (r Rect) String() string {
+	return "[" + ftoa(r.LLX) + "\x20" + ftoa(r.LLY) + "\x20" + ftoa(r.URX) + "\x20" + ftoa(r.URY) + "]"
+}
+
 var (
 	A5        = Rect{0, 0, 148 * Mm, 210 * Mm}
 	A4        = Rect{0, 0, 210 * Mm, 297 * Mm}

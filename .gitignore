@@ -1,3 +1,5 @@
 fnt/*
 content/*
 old/*
+*.json
+.vscode/*

@@ -1,7 +1,6 @@
 package gdf
 
 import (
-	"fmt"
 	"io"
 )
 
@@ -10,7 +9,7 @@ type pages struct {
 	refnum int
 }
 
-func (p *pages) refNum() int { return p.refnum }
+func (p *pages) id() int { return p.refnum }
 func (p *pages) children() []obj {
 	out := make([]obj, 0, len(p.P))
 	for _, page := range p.P {
@@ -18,12 +17,16 @@ func (p *pages) children() []obj {
 	}
 	return out
 }
-func (p *pages) setRef(i int) { p.refnum = i }
+func (p *pages) mark(i int) { p.refnum = i }
 func (p *pages) encode(w io.Writer) (int, error) {
-	kids := make([]string, len(p.P))
+	l := len(p.P)
+	kids := make([]string, l)
 	for i := range p.P {
-		kids[i] = fmt.Sprintf("%d 0 R", p.P[i].refNum())
+		kids[i] = iref(p.P[i].id())
 	}
-	return fmt.Fprintf(w, "<<\n/Type /Pages\n/Kids %v\n/Count %d\n>>\n",
-		kids, len(kids))
+	return w.Write(dict(1024, []field{
+		{"/Type", "/Pages"},
+		{"/Kids", kids},
+		{"/Count", l},
+	}))
 }

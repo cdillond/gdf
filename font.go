@@ -1,8 +1,6 @@
 package gdf
 
 import (
-	"bytes"
-	"fmt"
 	"io"
 	"os"
 
@@ -11,21 +9,22 @@ import (
 	"golang.org/x/text/encoding/charmap"
 )
 
+const ppem = 1000
+
 type Font struct {
 	*sfnt.Font
-	*SimpleFD
+	*simpleFD
 
 	refnum    int
-	Type      Name
-	Subtype   Name
-	BaseFont  Name
-	FirstChar int
-	LastChar  int
-	Widths    []int
-	Encoding  Name
-	Charset   map[rune]int // maps a font's runes to their default glyph advances
+	subtype   string
+	baseFont  string
+	firstChar int
+	lastChar  int
+	widths    []int
+	encName   string
+	charset   map[rune]int // maps a font's runes to their default glyph advances
 	enc       *encoding.Encoder
-	source    *resourceStream
+	source    *stream
 	buf       *sfnt.Buffer
 	noSubset  bool // whether the font represents a subset
 	srcb      []byte
@@ -40,13 +39,12 @@ func LoadTrueType(b []byte, flag FontFlag) (*Font, error) {
 		return nil, err
 	}
 	out := &Font{
-		Type:     Name("Font"),
-		Subtype:  Name("TrueType"),
-		Encoding: Name("WinAnsiEncoding"),
-		Charset:  make(map[rune]int),
-		enc:      charmap.Windows1252.NewEncoder(),
-		source: &resourceStream{
-			buf:    new(bytes.Buffer),
+		subtype: "/TrueType",
+		encName: "/WinAnsiEncoding",
+		charset: make(map[rune]int),
+		enc:     charmap.Windows1252.NewEncoder(),
+		source: &stream{
+			//buf:    new(bytes.Buffer),
 			Filter: Flate,
 		},
 		buf:  new(sfnt.Buffer),
@@ -56,11 +54,11 @@ func LoadTrueType(b []byte, flag FontFlag) (*Font, error) {
 	if err != nil {
 		return nil, err
 	}
-	out.BaseFont = Name(bf)
-	fd := NewSimpleFD(fnt, flag, out.buf)
+	out.baseFont = name(bf)
+	fd := newSimpleFD(fnt, flag, out.buf)
 	fd.FontFile2 = out.source
-	fd.FontName = Name(bf)
-	out.SimpleFD = fd
+	fd.FontName = name(bf)
+	out.simpleFD = fd
 	out.Font = fnt
 	return out, nil
 }
@@ -74,9 +72,8 @@ func LoadTrueTypeFile(path string, flag FontFlag) (*Font, error) {
 	return LoadTrueType(b, flag)
 }
 
-type SimpleFD struct {
-	Type        Name
-	FontName    Name
+type simpleFD struct {
+	FontName    string
 	Flags       FontFlag
 	FontBBox    []int
 	ItalicAngle int
@@ -95,17 +92,16 @@ type SimpleFD struct {
 	AvgWidth     int
 	MaxWidth     int
 	MissingWidth int
-	FontFile     *resourceStream // Type1 fonts
-	FontFile2    *resourceStream // TrueType fonts
-	FontFile3    *resourceStream // Program defined by the Subtype entry in the stream dictionray
+	FontFile     *stream // Type1 fonts
+	FontFile2    *stream // TrueType fonts
+	FontFile3    *stream // Program defined by the Subtype entry in the stream dictionray
 
 	refnum int
 }
 
 // Returns a font descriptor suitable for use with simple (i.e. non Type3, Type0, or MMType1) fonts.
-func NewSimpleFD(fnt *sfnt.Font, flag FontFlag, buf *sfnt.Buffer) *SimpleFD {
-	fd := new(SimpleFD)
-	fd.Type = Name("FontDescriptor")
+func newSimpleFD(fnt *sfnt.Font, flag FontFlag, buf *sfnt.Buffer) *simpleFD {
+	fd := new(simpleFD)
 	fd.Flags = flag
 	res, _ := fontBBox(fnt, buf)
 	fd.FontBBox = []int{int(res.Min.X), int(res.Min.Y), int(res.Max.X), int(res.Max.Y)}
@@ -113,7 +109,7 @@ func NewSimpleFD(fnt *sfnt.Font, flag FontFlag, buf *sfnt.Buffer) *SimpleFD {
 	pt := fnt.PostTable()
 	fd.ItalicAngle = int(pt.ItalicAngle)
 
-	met, _ := fnt.Metrics(buf, 1000, 0) // ppem is alway 1000
+	met, _ := fnt.Metrics(buf, ppem, 0)
 	fd.Ascent = int(met.Ascent)
 	fd.Descent = int(met.Descent)
 	fd.CapHeight = int(met.CapHeight)
@@ -138,33 +134,54 @@ const (
 	NoSubset FontFlag = 1 << 19 // Prevent gdf from subsetting a font. Not in the PDF spec.
 )
 
-func (f *Font) setRef(i int) { f.refnum = i }
-func (f *Font) refNum() int  { return f.refnum }
+func (f *Font) mark(i int) { f.refnum = i }
+func (f *Font) id() int    { return f.refnum }
 func (f *Font) children() []obj {
-	return []obj{f.SimpleFD, f.source}
+	return []obj{f.simpleFD, f.source}
 }
 func (f *Font) encode(w io.Writer) (int, error) {
-	var encstr string
-	if f.Encoding != Name("Symbolic") {
-		encstr = fmt.Sprintf("/Encoding %s\n", f.Encoding)
-	}
-	return fmt.Fprintf(w, "<<\n/Type %s\n/Subtype %s\n/BaseFont %s\n/FirstChar %d\n/LastChar %d\n/Widths %v\n%s/FontDescriptor %d 0 R\n>>\n",
-		f.Type, f.Subtype, f.BaseFont, f.FirstChar, f.LastChar, f.Widths, encstr, f.SimpleFD.refNum())
+	return w.Write(dict(1024, []field{
+		{"/Type", "/Font"},
+		{"/Subtype", f.subtype},
+		{"/BaseFont", f.baseFont},
+		{"/FirstChar", f.firstChar},
+		{"/LastChar", f.lastChar},
+		{"/Widths", f.widths},
+		{"/Encoding", f.encName},
+		{"/FontDescriptor", iref(f.simpleFD.id())},
+	}))
 }
 
-func (fd *SimpleFD) setRef(i int)    { fd.refnum = i }
-func (fd *SimpleFD) refNum() int     { return fd.refnum }
-func (fd *SimpleFD) children() []obj { return []obj{} } // no need to include FontFile2
-func (fd *SimpleFD) encode(w io.Writer) (int, error) {
+type field struct {
+	key string
+	val any
+}
+
+func (fd *simpleFD) mark(i int)      { fd.refnum = i }
+func (fd *simpleFD) id() int         { return fd.refnum }
+func (fd *simpleFD) children() []obj { return nil } // no need to include FontFile2
+func (fd *simpleFD) encode(w io.Writer) (int, error) {
 	var vers int
 	var ref int
 	if fd.FontFile2 == nil {
 		vers = 3
-		ref = fd.FontFile3.refNum()
+		ref = fd.FontFile3.id()
 	} else {
 		vers = 2
-		ref = fd.FontFile2.refNum()
+		ref = fd.FontFile2.id()
 	}
-	return fmt.Fprintf(w, "<<\n/Type %s\n/FontName %s\n/Flags %d\n/FontBBox %v\n/ItalicAngle %d\n/Ascent %d\n/Descent %d\n/CapHeight %d\n/StemV %d\n/XHeight %d\n/FontFile%d %d 0 R\n>>\n",
-		fd.Type, fd.FontName, fd.Flags, fd.FontBBox, fd.ItalicAngle, fd.Ascent, fd.Descent, fd.CapHeight, fd.StemV, fd.XHeight, vers, ref)
+
+	return w.Write(dict(1024, []field{
+		{"/Type", "/FontDescriptor"},
+		{"/FontName", fd.FontName},
+		{"/Flags", int(fd.Flags)},
+		{"/FontBBox", fd.FontBBox},
+		{"/ItalicAngle", fd.ItalicAngle},
+		{"/Ascent", fd.Ascent},
+		{"/Descent", fd.Descent},
+		{"/CapHeight", fd.CapHeight},
+		{"/StemV", fd.StemV},
+		{"/XHeight", fd.XHeight},
+		{"/FontFile" + itoa(vers), iref(ref)},
+	}))
 }

@@ -17,19 +17,19 @@ type GS struct {
 	SColor          Color      // stroking
 	LineWidth       float64
 	MiterLimit      float64
-	RenderingIntent Name
+	RenderingIntent string
 	StrokeAdj       bool
-	BlendMode       Name
-	SoftMask        Name
+	BlendMode       string
+	SoftMask        string
 	AlphaConstant   float64
 	AlphaSource     bool
-	BPComp          Name
+	BPComp          string
 	Overprint       bool
 	OverprintMode   uint
-	BlackGen        Name
-	UndercolorRem   Name
-	Transfer        Name
-	Halftone        Name
+	BlackGen        string
+	UndercolorRem   string
+	Transfer        string
+	Halftone        string
 	Flatness        float64
 	Smoothness      float64
 }
@@ -75,7 +75,8 @@ func (c *ContentStream) QSave() {
 	g := c.GS
 	c.gSStack = append(c.gSStack, g)
 	c.stack = append(c.stack, gState)
-	c.buf.Write([]byte("q\n"))
+	c.buf = append(c.buf, op_q...)
+	//c.buf.Write([]byte("q\n"))
 }
 
 // QRestore pops the most recent addition to c's GSStack off the stack and
@@ -92,70 +93,57 @@ func (c *ContentStream) QRestore() error {
 	c.stack = c.stack[:len(c.stack)-1]
 	c.GS = c.gSStack[len(c.gSStack)-1]
 	c.gSStack = c.gSStack[:len(c.gSStack)-1]
-	c.buf.Write([]byte("Q\n"))
+	c.buf = append(c.buf, op_Q...)
+	//c.buf.Write([]byte("Q\n"))
 	return nil
 }
 
 // Sets c's Current Transformation Matrix (c.GS.Matrix) to the matrix product of m and c.GS.Matrix.
 func (c *ContentStream) Concat(m Matrix) {
 	c.GS.Matrix = Mul(m, c.GS.Matrix) // NOT COMMUTATIVE, THIS ORDER MUST REMAIN THE SAME
-	fmt.Fprintf(c.buf, "%f %f %f %f %f %f cm\n", m.A, m.B, m.C, m.D, m.E, m.F)
+	c.buf = cmdf(c.buf, op_cm, m.A, m.B, m.C, m.D, m.E, m.F)
 }
 
 // Sets the linewidth (c.GS.LineWidth) to f.
 func (c *ContentStream) SetLineWidth(f float64) {
 	c.LineWidth = f
-	fmt.Fprintf(c.buf, "%f w\n", f)
+	c.buf = cmdf(c.buf, op_w, f)
 }
 
 // Sets the line cap style (c.GS.LineCap) to lc.
 func (c *ContentStream) SetLineCap(lc LineCap) {
 	c.LineCap = lc
-	fmt.Fprintf(c.buf, "%d J\n", lc)
+	c.buf = cmdi(c.buf, op_J, int64(lc))
 }
 
 // Sets the line join style (c.GS.LineJoin) to lj.
 func (c *ContentStream) SetLineJoin(lj LineJoin) {
 	c.LineJoin = lj
-	fmt.Fprintf(c.buf, "%d j\n", lj)
+	c.buf = cmdi(c.buf, op_j, int64(lj))
 }
 
 // Sets miter limit (c.GS.MiterLimit) to ml.
 func (c *ContentStream) SetMiterLimit(ml float64) {
 	c.MiterLimit = ml
-	fmt.Fprintf(c.buf, "%f M\n", ml)
+	c.buf = cmdf(c.buf, op_M, ml)
 }
 
 // Sets the dash pattern (c.GS.DashPattern) to d.
 func (c *ContentStream) SetDashPattern(d DashPattern) {
 	c.DashPattern = d
-	fmt.Fprintf(c.buf, "%v %d d\n", d.Array, d.Phase)
+	c.buf = append(c.buf, fmt.Sprintf("%v %d d\n", d.Array, d.Phase)...)
 }
 
 // Sets the rendering intent (c.GS.RenderingIntent) to n.
-func (c *ContentStream) SetRenderIntent(n Name) {
+func (c *ContentStream) SetRenderIntent(n string) {
 	c.RenderingIntent = n
-	fmt.Fprintf(c.buf, "%s ri\n", n)
+	c.buf = append(c.buf, n...)
+	c.buf = append(c.buf, '\x20')
+	c.buf = append(c.buf, op_ri...)
 }
 
 // Set the flatness (c.GS.Flatness) to f.
 func (c *ContentStream) SetFlatness(f float64) {
 	c.Flatness = f
-	fmt.Fprintf(c.buf, "%f i\n", f)
+	c.buf = cmdf(c.buf, op_i, f)
 }
-
-/*
-func (c *ContentStream) XGraphicsState(e ExtGState) {
-	var i int
-	for ; i < len(c.Parent.ExtGState); i++ {
-		if c.Parent.ExtGState[i] == &e {
-			break
-		}
-	}
-	if i == len(c.Parent.ExtGState) {
-		c.Parent.ExtGState = append(c.Parent.ExtGState, &e)
-	}
-	c.ExtGState = e
-	fmt.Fprintf(c.buf, "/GS%d gs\n", i)
-}
-*/
