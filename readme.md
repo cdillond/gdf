@@ -1,3 +1,5 @@
+[![Go Reference](https://pkg.go.dev/badge/github.com/cdillond/gdf.svg)](https://pkg.go.dev/github.com/cdillond/gdf)
+
 Package gdf defines an interface for generating PDFs. It hews closely to the basics of the
 PDF 2.0 specification and implements a relatively low-level API on which higher-level abstractions can
 be built. **This project is a work in progress.**

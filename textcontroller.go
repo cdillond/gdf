@@ -94,14 +94,13 @@ const (
 /*
 FormatText represents a slice of runes that can specify the formatting and content of the source text. The TextController applies the following rules
 to the formatting directives contained in FormatText:
- 1. \x03 (U+0003) is interpreted as end of text. Any runes that appear after this character will not be parsed.
- 2. \x07 (U+0007) is interpreted as a color indicator. This character must be followed by three comma-separated 3-digit integers in [0,255]
+ 1. rune(-1) is interpreted as end of text. Any runes that appear after this character will not be parsed.
+ 2. rune(-2) is interpreted as a color indicator. This character must be followed by three comma-separated 3-digit integers in [0,255]
     that specify the red, green, and blue components of an RGBColor. (This is equivalent to setting the non-stroking color of the document to
     RGBColor{R:float64(red)/255, G:float64(green)/255, B:float64(blue)/255}). Example: Hello, \x07127,000,090world\x07000,000,000!
- 3. \x0E (U+000E) toggles bold text on and off.
- 4. \x0F (U+000F) toggles italic text on and off.
-    The bold and italic indicators can be used to switch among fonts in a given font family. Example:
-    This is regular text. \x0EThis is bold text. \x0FThis is bold-italic text. \x0EThis is italic text. \x0FThis is regular text.
+ 3. rune(-3) toggles bold text on and off.
+ 4. rune(-4) toggles italic text on and off.
+    The bold and italic indicators can be used to switch among fonts in a given font family.
 */
 type FormatText []rune
 
