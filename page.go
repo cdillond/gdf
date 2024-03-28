@@ -63,7 +63,7 @@ func (r resourceDict) bytes() []byte {
 	return subdict(256, fields)
 }
 
-// See Table 31 — Entries in a page object.
+// NewPage returns a new Page object with the specified size and margins.
 func NewPage(pageSize Rect, margins Margins) Page {
 	p := Page{MediaBox: pageSize, CropBox: pageSize, Margins: margins}
 	p.Content = p.newContentStream()
@@ -93,7 +93,7 @@ func (p *PDF) InsertPage(page *Page, i int) error {
 	return nil
 }
 
-// Replaces the page at index i of the PDF's internal page structure with page.
+// ReplacePage replaces the page at index i of the PDF's internal page structure with page.
 func (p *PDF) ReplacePage(page *Page, i int) error {
 	if i < 0 || i >= len(p.catalog.Pages.P) {
 		return errors.New("out of bounds")
@@ -101,12 +101,6 @@ func (p *PDF) ReplacePage(page *Page, i int) error {
 	p.catalog.Pages.P[i] = page
 	return nil
 }
-
-// glyph space
-// text space (defined by text matrix)
-// image space (predefined
-// form space (for form XObjects)
-// pattern space (patern matrix)
 
 func (p *Page) mark(i int) { p.refnum = i }
 func (p *Page) id() int    { return p.refnum }
@@ -158,11 +152,12 @@ func (p *Page) encode(w io.Writer) (int, error) {
 func (p *Page) newContentStream() *ContentStream {
 	cs := new(ContentStream)
 	cs.buf = make([]byte, 0, 4096)
-	cs.GS = NewGS()
+	cs.GS = newGS()
 	cs.Filter = Flate
 	return cs
 }
 
+// Annotate draws the TextAnnot t to the area of p described by r.
 func (p *Page) Annotate(t *TextAnnot, r Rect) {
 	t.rect = r
 	p.Content.resources.TextAnnots = append(p.Content.resources.TextAnnots, t)

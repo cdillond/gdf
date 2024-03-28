@@ -8,18 +8,19 @@ import (
 	"github.com/klauspost/compress/zlib"
 )
 
+// A Filter is a compression algorithm that can compress internal PDF data.
 type Filter uint
 
 const (
-	NoFilter Filter = iota
-	Flate
+	Flate Filter = iota
+	NoFilter
 	invalidFilter
 )
 
-var filters = [...]string{"", "/FlateDecode"}
+var filters = [...]string{"/FlateDecode", ""}
 
 func (f Filter) isValid() bool  { return f < invalidFilter }
-func (f Filter) String() string { return filters[oneif(f.isValid())] }
+func (f Filter) String() string { return filters[oneif(!f.isValid())] }
 
 // n records the number of bytes written to w; the io.Writer.Write(p) method returns the number of bytes from p consumed by the writer.
 // This is needed to determine the length of the encoded portion of a compressed resource stream.
@@ -34,7 +35,7 @@ func (c *cwriter) Write(p []byte) (int, error) {
 	return t, err
 }
 
-// Returns the number of (compressed) bytes written to w, not the number of bytes written from src.
+// flateCompress returns the number of (compressed) bytes written to w, not the number of bytes written from src.
 func flateCompress(w io.Writer, src []byte) (int, error) {
 	c := &cwriter{
 		w: w,

@@ -16,7 +16,7 @@ func abs(i int) int {
 	return i
 }
 
-// Returns the PDF Date string representation of t.
+// date returns the PDF Date string representation of t.
 func date(t time.Time) []byte {
 	dst := make([]byte, len("(D:YYYYMMDDHHmmSSOHH'mm)"))
 	n := copy(dst, []byte("(D:"))
@@ -70,7 +70,7 @@ func date(t time.Time) []byte {
 
 }
 
-// Returns the hex encoding of b (including <> chars) suitable for use as a PDF byte string.
+// htxt returns the hex encoding of b (including <> chars) suitable for use as a PDF byte string.
 func htxt(b []byte) []byte {
 	dst := make([]byte, 0, 2*len(b)+2)
 	dst = append(dst, '<')
@@ -100,20 +100,20 @@ func pdfstring(s string) string {
 	return "(" + s + ")"
 }
 
-// Returns the string representation of i as an indirect reference.
+// iref returns the string representation of o as an indirect reference.
 func iref(o obj) string {
 	return itoa(o.id()) + "\x200\x20R"
 }
 
-// Returns the s as a PDF Name object literal.
+// name returns the s as a PDF Name object literal.
 func name(s string) string {
 	return "/" + s
 }
 
-// Returns true iff c is an \n or \r byte.
+// isEOL returns true iff c is an \n or \r byte.
 func isEOL(c byte) bool { return c == '\n' || c == '\r' }
 
-// Appends a byte slice representing a command that takes one or more float64 args to buf and returns the extended slice.
+// cmdf appends a byte slice representing a command that takes one or more float64 args to buf and returns the extended slice.
 func cmdf(buf []byte, op string, args ...float64) []byte {
 	for i := 0; i < len(args); i++ {
 		buf = strconv.AppendFloat(buf, args[i], 'f', -1, 64)
@@ -122,7 +122,7 @@ func cmdf(buf []byte, op string, args ...float64) []byte {
 	return append(buf, op...)
 }
 
-// Appends a byte slice representing a command that takes one or more int64 args to buf and returns the extended slice.
+// cmdi appends a byte slice representing a command that takes one or more int64 args to buf and returns the extended slice.
 func cmdi(buf []byte, op string, args ...int64) []byte {
 	for i := 0; i < len(args); i++ {
 		buf = strconv.AppendInt(buf, args[i], 10)
@@ -131,7 +131,7 @@ func cmdi(buf []byte, op string, args ...int64) []byte {
 	return append(buf, op...)
 }
 
-// Returns fields formatted as a byte slice. Size is a hint for how large the buffer should be.
+// dict returns fields formatted as a byte slice. Size is a hint for how large the buffer should be.
 func dict(size int, fields []field) []byte {
 	if len(fields) == 0 {
 		return nil
@@ -171,7 +171,7 @@ func dict(size int, fields []field) []byte {
 	return append(out, ">>\n"...)
 }
 
-// Wrapper for dict() that removes the trailing '\n'; to be used when the dict is embedded in another dict (i.e. is a 'subdictionary').
+// subdict is a wrapper for dict() that removes the trailing '\n'; to be used when the dict is embedded in another dict (i.e. is a 'subdictionary').
 func subdict(size int, fields []field) []byte {
 	b := dict(size, fields)
 	if len(b) < 1 {
@@ -180,7 +180,7 @@ func subdict(size int, fields []field) []byte {
 	return b[:len(b)-1]
 }
 
-// Appends the string representation of a Rect, []string, []float64, or []int to dst and returns the extended slice. Returns dst unaltered if s is not one of these types.
+// sbuf appends the string representation of a Rect, []string, []float64, or []int to dst and returns the extended slice. It returns dst unaltered if s is not one of these types.
 func sbuf(dst []byte, s any) []byte {
 	switch v := s.(type) {
 	case Rect:
@@ -260,7 +260,7 @@ type integer interface {
 	~uint | ~uint8 | ~uint16 | ~uint32 | ~uint64 | ~uintptr | int | ~int8 | ~int16 | ~int32 | ~int64
 }
 
-// Wrapper for strconv.AppendInt.
+// itobuf is a wrapper for strconv.AppendInt.
 func itobuf[T integer](i T, dst []byte) []byte {
 	return strconv.AppendInt(dst, int64(i), 10)
 }
@@ -272,12 +272,12 @@ func itob[T integer](i T) []byte {
 	return strconv.AppendInt(nil, int64(i), 10)
 }
 
-// Wrapper for strconv.FormatFloat.
+// ftoa is a wrapper for strconv.FormatFloat.
 func ftoa(f float64) string {
 	return strconv.FormatFloat(f, 'f', -1, 64)
 }
 
-// Returns 1 if b == true and 0 otherwise.
+// oneif returns 1 if b == true and 0 otherwise.
 func oneif(b bool) int {
 	var x int
 	if b {
@@ -286,16 +286,14 @@ func oneif(b bool) int {
 	return x
 }
 
-// returns the win1252 encoding of r.
+// rtoc returns the win1252 encoding of r.
 func rtoc(r rune) byte {
-	if r < 0 {
-		return 0
+	u := uint32(r)
+	if u < 128 {
+		return byte(u)
 	}
-	if r < 128 {
-		return byte(r)
-	}
-	if r < 256 && w1252[r] == r {
-		return byte(r)
+	if u < 256 && w1252[u] == r {
+		return byte(u)
 	}
 	for i := 0x80; i < len(w1252); i++ {
 		if r == w1252[i] {
@@ -305,7 +303,7 @@ func rtoc(r rune) byte {
 	return 0
 }
 
-// maps indices to unicode runes.
+// w1252 maps bytes to unicode runes.
 var w1252 = [256]rune{
 	0x0000, 0x0001, 0x0002, 0x0003, 0x0004, 0x0005, 0x0006, 0x0007,
 	0x0008, 0x0009, 0x000A, 0x000B, 0x000C, 0x000D, 0x000E, 0x000F,

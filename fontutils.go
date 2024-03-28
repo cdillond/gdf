@@ -20,12 +20,15 @@ func calculateWidths(f *Font) {
 	for lc > -1 && charWidths[lc] == 0 {
 		lc--
 	}
+	if fc > lc {
+		fc, lc = 0, 0
+	}
 	f.firstChar = fc
 	f.lastChar = lc
 	f.widths = charWidths[f.firstChar : f.lastChar+1]
 }
 
-// Returns the advance of r in font units.
+// GlyphAdvance returns the advance of r in font units.
 func GlyphAdvance(r rune, f *Font) int {
 	adv, ok := f.charset[r]
 	if ok {
@@ -47,7 +50,7 @@ func GlyphAdvance(r rune, f *Font) int {
 	return int(adv26_6)
 }
 
-// Returns the advance and kerning of r1 when set before r2.
+// ShapedGlyphAdv returns the advance and kerning of r1 when set before r2.
 func ShapedGlyphAdv(r1, r2 rune, f *Font) (int, int) {
 	adv := GlyphAdvance(r1, f)
 	gid1, err := f.GlyphIndex(f.buf, r1)
@@ -77,7 +80,7 @@ func fontBBox(font *sfnt.Font, buf *sfnt.Buffer) (fixed.Rectangle26_6, error) {
 	return bbox, nil
 }
 
-// Returns the ascent and descent of the glyph corresponding to the given rune.
+// AscDesc returns the ascent and descent, in font units, of the glyph corresponding to the given rune.
 func AscDesc(r rune, f *Font) (float64, float64) {
 	gid, err := f.GlyphIndex(f.buf, r)
 	if err != nil {
@@ -89,7 +92,7 @@ func AscDesc(r rune, f *Font) (float64, float64) {
 	return float64(-bounds.Min.Y), float64(bounds.Max.Y)
 }
 
-// Returns the maximum ascent and descent of the glyphs in the given text.
+// TextAscDesc returns the maximum ascent and descent, in font units, of the glyphs in the given text.
 func TextAscDesc(text []rune, f *Font) (float64, float64) {
 	var maxA, maxD float64
 	for i := range text {

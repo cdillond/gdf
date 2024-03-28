@@ -25,20 +25,21 @@ type XObject struct {
 	xType
 }
 
-// Returns an XObject with b as the raw byte source. Use with caution.
+// NewXObjFromBytes returns an XObject with b as the raw byte source. Use with caution.
 func NewXObjFromBytes(b []byte, t xType, BBox Rect) *XObject {
 	x := NewXObj(t, BBox)
 	x.buf = append(x.buf, b...)
 	return x
 }
 
+// NewXObj returns an XObject of type t.
 func NewXObj(t xType, BBox Rect) *XObject {
 	x := &XObject{
 		BBox:  BBox,
 		xType: t,
 	}
 	x.buf = make([]byte, 0, 2048)
-	x.GS = NewGS()
+	x.GS = newGS()
 	x.Filter = Flate
 	return x
 }

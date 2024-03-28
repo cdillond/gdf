@@ -23,19 +23,6 @@ func NewPDF() *PDF {
 }
 
 func buildPDFTree(pdf *PDF) {
-	// first we need to check for any widget annotations so that we can resolve the acroform fields.
-	/*for _, p := range pdf.catalog.Pages.P {
-		p.parent = pdf.catalog.Pages
-		for _, widget := range p.C.resources.Widgets {
-			if pdf.catalog.Acroform == nil {
-				pdf.catalog.Acroform = new(acroform)
-			}
-			pdf.catalog.Acroform.acrofields = append(pdf.catalog.Acroform.acrofields, widget.acrofield)
-			widget.acrofield.parent = pdf.catalog.Acroform
-			widget.acrofield.Child = widget
-		}
-	}*/
-
 	includeObj(pdf, obj((&pdf.catalog)))
 	includeChildren(pdf, obj(&(pdf.catalog)))
 	if pdf.info != nil {

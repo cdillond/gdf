@@ -15,6 +15,7 @@ type ViewPrefs struct {
 	NumCopies             uint
 }
 
+// SetViewPrefs indicates the desired display settings for the PDF viewer to use when displaying p.
 func (p *PDF) SetViewPrefs(v ViewPrefs) {
 	p.catalog.prefs = v
 }

@@ -16,7 +16,7 @@ type Rect struct {
 	LLX, LLY, URX, URY float64
 }
 
-// Returns a Rect where ll is the lower left vertex and ur is the upper right vertex.
+// NewRect returns a Rect where ll is the lower left vertex and ur is the upper right vertex.
 func NewRect(ll, ur Point) Rect {
 	return Rect{
 		LLX: ll.X,
@@ -52,13 +52,13 @@ var (
 	FivePt    = Margins{5, 5, 5, 5}
 )
 
-// Converts n font units to points given a font size in points. For PDFs, ppem is always 1000.
+// FUToPt cnverts n font units to points given a font size in points. For PDFs, ppem is always 1000.
 func FUToPt(n, fontSize float64) float64 { return n * fontSize / 1000 }
 
-// Converts n points to font units given a font size in points. For PDFs, ppem is always 1000.
+// PtToFU converts n points to font units given a font size in points. For PDFs, ppem is always 1000.
 func PtToFU(n, fontSize float64) float64 { return n * 1000 / fontSize }
 
-// Returns the Rect that results from applying m to r without checking whether that Rect is valid.
+// Bounds returns the Rect that results from applying m to r without checking whether that Rect is valid.
 func (r Rect) Bounds(m Margins) Rect {
 	return Rect{
 		LLX: r.LLX + m.Left,
@@ -68,26 +68,26 @@ func (r Rect) Bounds(m Margins) Rect {
 	}
 }
 
-// Returns r's height.
+// Height returns r's height.
 func (r Rect) Height() float64 { return r.URY - r.LLY }
 
-// Returns r's width.
+// Width returns r's width.
 func (r Rect) Width() float64 { return r.URX - r.LLX }
 
-// Returns the length of r's diagonal.
+// Diagonal returns the length of r's diagonal.
 func (r Rect) Diagonal() float64 {
 	a := r.URX - r.LLX
 	b := r.URY - r.LLY
 	return math.Sqrt(a*a + b*b)
 }
 
-// Returns the angle, in radians, formed by the lower side of the rectangle and the lower-left to upper-right diagonal, and that angle's complement.
+// Angles returns the angle, in radians, formed by the lower side of the rectangle and the lower-left to upper-right diagonal, and that angle's complement.
 func (r Rect) Angles() (float64, float64) {
 	a := math.Atan((r.URY - r.LLY) / (r.URX - r.LLX))
 	return a, 90 - a
 }
 
-// Returns the rectangle that results from swapping r's x and y values.
+// Landscape returns the rectangle that results from swapping r's x and y values.
 func (r Rect) Landscape() Rect {
 	return Rect{
 		LLX: r.LLY,

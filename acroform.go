@@ -86,7 +86,7 @@ type AcroField struct {
 	Flags fieldFlags // field flags
 
 	fieldType acroType // field type
-	child     *Widget  // each acrofield must be instatiated by a widget
+	child     *Widget  // each acrofield must be instatiated by a Widget
 	da        []byte   // "default appearance" directive for variable text-type fields
 	refnum    int
 	parent    *acroform
@@ -156,7 +156,7 @@ var (
 )
 
 // AddAcroField adds an AcroField, whose visible component is w, to p. dst specifies the area of p's user space onto which w is drawn.
-// Once f has been added to p, p MUST be appended to the PDF from which f was derived prior to the invocation of PDF.WriteTo().
+// Once f has been added to p, p must be appended to the PDF from which f was derived prior to the invocation of PDF.WriteTo().
 func (p *Page) AddAcroField(w *Widget, f *AcroField, dst Rect) error {
 	if f.child != nil {
 		return ErrChildren

@@ -11,6 +11,8 @@ import (
 
 const ppem = 1000
 
+// A Font represents a TrueType font. Any given Font struct should be used on at most 1 PDF. To use the same underlying
+// font on multiple PDF files, derive a new Font struct from the source font file or bytes for each PDF.
 type Font struct {
 	*sfnt.Font
 	*simpleFD
@@ -30,7 +32,7 @@ type Font struct {
 	srcb      []byte
 }
 
-// Returns a *Font object, which can be used for drawing text to a ContentStream, and an error.
+// LoadTrueType returns a *Font object, which can be used for drawing text to a ContentStream or XObject, and an error.
 func LoadTrueType(b []byte, flag FontFlag) (*Font, error) {
 	b2 := make([]byte, len(b))
 	copy(b2, b)
@@ -44,7 +46,6 @@ func LoadTrueType(b []byte, flag FontFlag) (*Font, error) {
 		charset: make(map[rune]int),
 		enc:     charmap.Windows1252.NewEncoder(),
 		source: &stream{
-			//buf:    new(bytes.Buffer),
 			Filter: Flate,
 		},
 		buf:  new(sfnt.Buffer),
@@ -63,7 +64,7 @@ func LoadTrueType(b []byte, flag FontFlag) (*Font, error) {
 	return out, nil
 }
 
-// Returns a *Font object, which can be used for drawing text to a ContentStream, and an error.
+// LoadTrueTypeFile returns a *Font object, which can be used for drawing text to a ContentStream or XObject, and an error.
 func LoadTrueTypeFile(path string, flag FontFlag) (*Font, error) {
 	b, err := os.ReadFile(path)
 	if err != nil {
@@ -99,7 +100,7 @@ type simpleFD struct {
 	refnum int
 }
 
-// Returns a font descriptor suitable for use with simple (i.e. non Type3, Type0, or MMType1) fonts.
+// newSimpleFD returns a font descriptor suitable for use with simple (i.e. non Type3, Type0, or MMType1) fonts.
 func newSimpleFD(fnt *sfnt.Font, flag FontFlag, buf *sfnt.Buffer) *simpleFD {
 	fd := new(simpleFD)
 	fd.Flags = flag

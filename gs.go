@@ -2,7 +2,7 @@ package gdf
 
 import "fmt"
 
-// Graphics State
+// A GS struct represents a ContentStream's graphics state.
 type GS struct {
 	Matrix // Current Transformation Matrix
 	TextState
@@ -55,6 +55,7 @@ type DashPattern struct {
 	Phase int
 }
 
+// A PathState represents a ContentStream's current path operations state.
 type PathState uint
 
 const (
@@ -63,7 +64,7 @@ const (
 	Clipping
 )
 
-func NewGS() GS {
+func newGS() GS {
 	out := new(GS)
 	out.HScale = 100
 	out.Matrix = NewMatrix()
@@ -131,7 +132,10 @@ func (c *ContentStream) SetMiterLimit(ml float64) {
 // Sets the dash pattern (c.GS.DashPattern) to d.
 func (c *ContentStream) SetDashPattern(d DashPattern) {
 	c.DashPattern = d
-	c.buf = append(c.buf, fmt.Sprintf("%v %d d\n", d.Array, d.Phase)...)
+	c.buf = sbuf(c.buf, d.Array)
+	c.buf = append(c.buf, '\x20')
+	c.buf = itobuf(int64(d.Phase), c.buf)
+	c.buf = append(c.buf, "\x20d\n"...)
 }
 
 // Sets the rendering intent (c.GS.RenderingIntent) to n.

@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-// A Widget is an annotation that serves as the visibile representation of an interactive acroForm field.
+// A Widget is an annotation that serves as the visibile representation of an interactive acroform field.
 type Widget struct {
 	AcroType     acroType
 	Flags        annotFlag // 12.5.3 annotation flags
@@ -14,10 +14,10 @@ type Widget struct {
 	CreationDate time.Time
 	Subject      string
 	Open         bool
-	Name         string // unique text string identifiying the widget
+	Name         string // unique text string identifiying the Widget
 	Opts         []string
 	//H            string highlighting mode
-	rect      Rect // location of the widget on the parent page
+	rect      Rect // location of the Widget on the parent page
 	cfg       WidgetCfger
 	acrofield *AcroField
 	page      *Page
@@ -40,9 +40,9 @@ func (a *Widget) encode(w io.Writer) (int, error) {
 		{"/Type", "/Annot"},
 		{"/Subtype", "/Widget"},
 		{"/FT", a.AcroType.String()},
-		{"/F", uint32(a.Flags)}, // Always print widget annotations.
+		{"/F", uint32(a.Flags)}, // Always print Widget annotations.
 		{"/Rect", a.rect},
-		{"/AP", a.cfg.bytes()}, // Required for all widgets supported by gdf.
+		{"/AP", a.cfg.bytes()}, // Required for all Widgets supported by gdf.
 		{"/Parent", iref(a.acrofield)},
 		{"/P", iref(a.page)},
 	}...)
@@ -90,21 +90,22 @@ func (a *Widget) encode(w io.Writer) (int, error) {
 	return w.Write(dict(256, items))
 }
 
+// NewWidget returns a new *Widget as configured by cfg.
 func NewWidget(cfg WidgetCfger) *Widget {
 	w := new(Widget)
 	cfg.configure(w)
 	return w
 }
 
-// An interface used to configure Widgets and their associated AcroFields. Implemented by AcroTextCfg and CheckboxCfg.
+// WidgetCfger is an interface used to configure Widgets and their associated AcroFields. It is implemented by AcroTextCfg and CheckboxCfg.
 type WidgetCfger interface {
 	configure(*Widget)
 	bytes() []byte
 }
 
 /*
-Implements WidgetCfger. AcroTextCfgs can be used to instantiate text-type AcroFields. The PrintAnnot
-flag should be set in almost all cases. The Appearance *XObject can be left nil.
+AcroTextCfgs can be used to instantiate text-type AcroFields. The PrintAnnot
+flag should be set in almost all cases. The Appearance *XObject can be left nil. Implements WidgetCfger.
 */
 type AcroTextCfg struct {
 	Flags       annotFlag
@@ -128,8 +129,9 @@ func (a AcroTextCfg) bytes() []byte {
 	return subdict(64, []field{{"/N", iref(a.Appearance)}})
 }
 
-// Implements WidgetCfger. The PrintAnnot flag should be set in almost all cases. The Off and On *XObjects are mandatory,
-// but can be reused by multiple Widgets.
+// CheckBoxCfgs can be used to instantiate checkbox/button-type AcroFields.
+// The PrintAnnot flag should be set in almost all cases. The Off and On *XObjects are mandatory,
+// but can be reused by multiple Widgets. Implements WidgetCfger.
 type CheckboxCfg struct {
 	Flags       annotFlag
 	Off, On     *XObject
