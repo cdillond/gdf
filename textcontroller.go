@@ -12,6 +12,8 @@ var (
 	errWordSize  = fmt.Errorf("source text contains an unbreakable word that is longer than the maximum line length")
 )
 
+// A TextController is a struct that aids in writing text to a ContentStream. The TextController can break text into lines and paragraphs,
+// determine the appropriate kerning for glyphs in a string, and draw text according to the format specified by the ControllerCfg struct.
 type TextController struct {
 	src            []rune        // source text
 	f              FontFamily    // the set of fonts to be used. On each call to DrawText, the supplied ContentStream's font will be set to one of the fonts from f, according to the TextConroller's font weight state. The fonts need not be of the same actual family - chosen families are valid, too!
@@ -35,6 +37,7 @@ type TextController struct {
 	ln             int // line index
 }
 
+// A ControllerCfg specifies options for the formatting of text drawn by a TextController.
 type ControllerCfg struct {
 	Alignment
 	Justification
@@ -81,6 +84,13 @@ const (
 	Justified
 )
 
+const (
+	eot_tok  rune = -1
+	col_tok  rune = -2
+	bold_tok rune = -3
+	ital_tok rune = -4
+)
+
 /*
 FormatText represents a slice of runes that can specify the formatting and content of the source text. The TextController applies the following rules
 to the formatting directives contained in FormatText:
@@ -95,6 +105,8 @@ to the formatting directives contained in FormatText:
 */
 type FormatText []rune
 
+// NewTextController returns a TextController that is ready to write src to ContentStreams. It returns an invalid TextController
+// and an error if it encounters a problem while parsing and shaping src.
 func NewTextController(src FormatText, lineWidth float64, f FontFamily, cfg ControllerCfg) (TextController, error) {
 	tc := TextController{
 		src:       src,
@@ -201,10 +213,6 @@ func (tc *TextController) DrawText(c *ContentStream, area Rect) (Point, bool, er
 		//c.QRestore()
 		return *new(Point), false, err
 	}
-	//err = c.QRestore()
-	//if err != nil {
-	//	return *new(Point), false, err
-	//}
 	return endPt, tc.n == len(tc.tokens), nil
 }
 
@@ -271,7 +279,7 @@ func (tc *TextController) tokenize(src FormatText) []token {
 	isBold := tc.isBold
 	isItal := tc.isItal
 
-	src = append(src, []rune{'\n', '\u0003'}...) // this simplifies some of the logic
+	src = append(src, []rune{'\n', eot_tok}...) // this simplifies some of the logic
 	out := make([]token, 0, len(src))
 	run := []rune{}
 	kerns := []int{}
@@ -314,7 +322,7 @@ func (tc *TextController) tokenize(src FormatText) []token {
 			kerns = kerns[:0]
 			adv := GlyphAdvance('\u0020', curFont)
 			out = append(out, skip(adv))
-		case '\u0007':
+		case col_tok:
 			if len(run) != 0 {
 				chars := make([]rune, len(run))
 				copy(chars, run)
@@ -338,7 +346,7 @@ func (tc *TextController) tokenize(src FormatText) []token {
 			}
 			out = append(out, ncChange{r: r, g: g, b: b})
 			i += 11
-		case '\u000E': // bold
+		case bold_tok: // bold
 			if len(run) != 0 {
 				chars := make([]rune, len(run))
 				copy(chars, run)
@@ -365,7 +373,7 @@ func (tc *TextController) tokenize(src FormatText) []token {
 				out = append(out, bold)
 			}
 			isBold = !isBold
-		case '\u000F': // italic
+		case ital_tok: // italic
 			if len(run) != 0 {
 				chars := make([]rune, len(run))
 				copy(chars, run)
@@ -392,7 +400,7 @@ func (tc *TextController) tokenize(src FormatText) []token {
 				out = append(out, ital)
 			}
 			isItal = !isItal
-		case '\u0003': // eot
+		case eot_tok: // eot
 			if len(run) != 0 {
 				out = append(out, box{chars: run, kerns: kerns, advs: advs, width: width(advs, kerns)})
 			}
@@ -419,7 +427,7 @@ type node struct {
 
 // The algorithm used here - a modified version of the Knuth-Plass linebreaking algorithm - has O(n²) time complexity, but the value of n is
 // effectively limited by the squishTolerance and stretchTolerance. There are pathological cases that can break the algorithm. In such cases,
-// the tolerances can be expanded - but this is doublely bad because it can result in worse-looking paragraphs that take much longer to process.
+// the tolerances can be expanded - but this is doubly bad because it can result in worse-looking paragraphs that take much longer to process.
 // Alternative algorithms either cannot be adopted to text that includes optional hyphenated breaks and/or negative glyph advances, or find
 // potentially suboptimal line fits.
 // TODO: gracefully handle pathological cases.
@@ -527,9 +535,9 @@ func (tc *TextController) breakLines(squishTolerance, stretchTolerance float64) 
 
 			nodes := []node{endNode}
 			for next := nodes[0].bestStart; next > 0; {
-				nnode := activeNodes[next]
-				nodes = append(nodes, nnode)
-				next = nnode.bestStart
+				nextNode := activeNodes[next]
+				nodes = append(nodes, nextNode)
+				next = nextNode.bestStart
 			}
 			slices.Reverse(nodes)
 

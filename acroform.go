@@ -5,7 +5,7 @@ import (
 	"io"
 )
 
-// The acroform type represents a document-level parent form. There can be only one acroform per document, but it can have mulitple fields.
+// The acroform type represents a document-level parent form. There can be only one acroform per document, but it can have multiple fields.
 // Inclusion of an acroform in a PDF complicates the document structure, since Widgets must be children of both an AcroField and a Page.
 type acroform struct {
 	acrofields []obj
@@ -45,7 +45,7 @@ func (p *PDF) newAcroform() *acroform {
 type acroType uint
 
 const (
-	AcroButton acroType = iota // Form type that includes chekboxes.
+	AcroButton acroType = iota // Form type that includes checkboxes.
 	AcroText
 	acroChoice    // TODO
 	acroSignature // TODO

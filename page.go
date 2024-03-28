@@ -128,11 +128,9 @@ func (p *Page) encode(w io.Writer) (int, error) {
 		a := make([]string, 0, len(p.Content.resources.Widgets)+len(p.Content.resources.TextAnnots))
 		for _, an := range p.Content.resources.TextAnnots {
 			a = append(a, iref(an))
-			//a[i] = iref(p.C.resources.Annots[i].id())
 		}
 		for _, an := range p.Content.resources.Widgets {
 			a = append(a, iref(an))
-			//a[i] = iref(p.C.resources.Annots[i].id())
 		}
 		fields = append(fields, field{
 			"/Annots", a,

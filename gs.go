@@ -105,7 +105,7 @@ func (c *ContentStream) Concat(m Matrix) {
 	c.buf = cmdf(c.buf, op_cm, m.A, m.B, m.C, m.D, m.E, m.F)
 }
 
-// Sets the linewidth (c.GS.LineWidth) to f.
+// Sets the line width (c.GS.LineWidth) to f.
 func (c *ContentStream) SetLineWidth(f float64) {
 	c.LineWidth = f
 	c.buf = cmdf(c.buf, op_w, f)

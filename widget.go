@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-// A Widget is an annotation that serves as the visibile representation of an interactive acroform field.
+// A Widget is an annotation that serves as the visible representation of an interactive acroform field.
 type Widget struct {
 	AcroType     acroType
 	Flags        annotFlag // 12.5.3 annotation flags
@@ -14,7 +14,7 @@ type Widget struct {
 	CreationDate time.Time
 	Subject      string
 	Open         bool
-	Name         string // unique text string identifiying the Widget
+	Name         string // unique text string identifying the Widget
 	Opts         []string
 	//H            string highlighting mode
 	rect      Rect // location of the Widget on the parent page
