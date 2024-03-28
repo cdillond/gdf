@@ -69,7 +69,7 @@ func (c *catalog) encode(w io.Writer) (int, error) {
 }
 
 // SetLanguage sets the default natural language of all text in the PDF to s, which must be a string representation of a valid BCP 47 language tag. (See golang.org/x/text/language).
-// NOTE: gdf currently only supports Windows-1252 ("WinANSIEncoding") for most textual elements in a PDF document. Text that appears in annotations may represent a wider range
+// NOTE: gdf currently only supports Windows-1252 ("WinAnsiEncoding") for most textual elements in a PDF document. Text that appears in annotations may represent a wider range
 // of characters, depending on the reader used to view the PDF.
 func (p *PDF) SetLanguage(s string) {
 	p.catalog.lang = s
