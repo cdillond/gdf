@@ -41,16 +41,16 @@ func (c *catalog) mark(i int) { c.refnum = i }
 func (c *catalog) encode(w io.Writer) (int, error) {
 	fields := []field{
 		{"/Type", "/Catalog"},
-		{"/Pages", iref(c.Pages.id())},
+		{"/Pages", iref(c.Pages)},
 	}
 	if len(c.streams) > 0 {
 		fields = append(fields, field{
-			"/Metadata", iref(c.streams[0].id()),
+			"/Metadata", iref(c.streams[0]),
 		})
 	}
 	if len(c.Acroform.acrofields) > 0 {
 		fields = append(fields, field{
-			"/AcroForm", iref(c.Acroform.id()),
+			"/AcroForm", iref(c.Acroform),
 		})
 	}
 	if b := c.prefs.bytes(); b != nil {

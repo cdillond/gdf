@@ -148,7 +148,7 @@ func (f *Font) encode(w io.Writer) (int, error) {
 		{"/LastChar", f.lastChar},
 		{"/Widths", f.widths},
 		{"/Encoding", f.encName},
-		{"/FontDescriptor", iref(f.simpleFD.id())},
+		{"/FontDescriptor", iref(f.simpleFD)},
 	}))
 }
 
@@ -162,13 +162,13 @@ func (fd *simpleFD) id() int         { return fd.refnum }
 func (fd *simpleFD) children() []obj { return nil } // no need to include FontFile2
 func (fd *simpleFD) encode(w io.Writer) (int, error) {
 	var vers int
-	var ref int
+	var ref string
 	if fd.FontFile2 == nil {
 		vers = 3
-		ref = fd.FontFile3.id()
+		ref = iref(fd.FontFile3)
 	} else {
 		vers = 2
-		ref = fd.FontFile2.id()
+		ref = iref(fd.FontFile2)
 	}
 
 	return w.Write(dict(1024, []field{
@@ -182,6 +182,6 @@ func (fd *simpleFD) encode(w io.Writer) (int, error) {
 		{"/CapHeight", fd.CapHeight},
 		{"/StemV", fd.StemV},
 		{"/XHeight", fd.XHeight},
-		{"/FontFile" + itoa(vers), iref(ref)},
+		{"/FontFile" + itoa(vers), ref},
 	}))
 }

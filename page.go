@@ -45,7 +45,7 @@ func (r resourceDict) bytes() []byte {
 	if len(r.Fonts) > 0 {
 		ffields := make([]field, len(r.Fonts))
 		for i := range r.Fonts {
-			ffields[i] = field{"/F" + itoa(i), iref(r.Fonts[i].id())}
+			ffields[i] = field{"/F" + itoa(i), iref(r.Fonts[i])}
 		}
 		fields = append(fields, field{
 			"/Font", subdict(128, ffields),
@@ -54,7 +54,7 @@ func (r resourceDict) bytes() []byte {
 	if len(r.XObjs) > 0 {
 		xfields := make([]field, len(r.XObjs))
 		for i := range r.XObjs {
-			xfields[i] = field{"/P" + itoa(i), iref(r.XObjs[i].id())}
+			xfields[i] = field{"/P" + itoa(i), iref(r.XObjs[i])}
 		}
 		fields = append(fields, field{
 			"/XObject", subdict(128, xfields),
@@ -133,11 +133,11 @@ func (p *Page) encode(w io.Writer) (int, error) {
 	if len(p.Content.resources.Widgets) > 0 {
 		a := make([]string, 0, len(p.Content.resources.Widgets)+len(p.Content.resources.TextAnnots))
 		for _, an := range p.Content.resources.TextAnnots {
-			a = append(a, iref(an.id()))
+			a = append(a, iref(an))
 			//a[i] = iref(p.C.resources.Annots[i].id())
 		}
 		for _, an := range p.Content.resources.Widgets {
-			a = append(a, iref(an.id()))
+			a = append(a, iref(an))
 			//a[i] = iref(p.C.resources.Annots[i].id())
 		}
 		fields = append(fields, field{
@@ -147,10 +147,10 @@ func (p *Page) encode(w io.Writer) (int, error) {
 
 	return w.Write(dict(512, append([]field{
 		{"/Type", "/Page"},
-		{"/Parent", iref(p.parent.id())},
+		{"/Parent", iref(p.parent)},
 		{"/MediaBox", p.MediaBox},
 		{"/CropBox", p.CropBox},
-		{"/Contents", iref(p.Content.id())},
+		{"/Contents", iref(p.Content)},
 		{"/Resources", p.Content.resources.bytes()},
 	}, fields...)))
 }

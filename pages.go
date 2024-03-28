@@ -22,7 +22,7 @@ func (p *pages) encode(w io.Writer) (int, error) {
 	l := len(p.P)
 	kids := make([]string, l)
 	for i := range p.P {
-		kids[i] = iref(p.P[i].id())
+		kids[i] = iref(p.P[i])
 	}
 	return w.Write(dict(1024, []field{
 		{"/Type", "/Pages"},

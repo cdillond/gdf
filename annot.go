@@ -8,9 +8,10 @@ import (
 type annotFlag uint32
 
 const (
-	InviisbleAnnot annotFlag = 1 << iota
+	// Flags specifying the behavior of TextAnnots and Widgets.
+	InvisibleAnnot annotFlag = 1 << iota
 	HiddenAnnot
-	PrintAnnot // IMPORTANT: should be supplied
+	PrintAnnot // IMPORTANT: must be set for an annotation to appear when printed.
 	NoZoomAnnot
 	NoRotateAnnot
 	NoViewAnnot
@@ -44,20 +45,24 @@ func (t textAnnotStyle) String() string {
 	return "/Comment"
 }
 
+/*
+A TextAnnot is text that appears in a pop-up when the user hovers over the annotated area of a page. The Appearance *XObject, if provided, describes
+the appearance of the TextAnnot's note icon, which is normally always visible on the viewed page. The Color field specifies the color of the pop-up annotation.
+*/
 type TextAnnot struct {
-	Contents     string // Text to be displayed for the annotation.
+	Contents     string // Text to be displayed by the annotation.
 	User         string // Name of the user creating the comment.
 	ModDate      time.Time
 	CreationDate time.Time
 	Subject      string
 	Open         bool
-	Name         string // unique annotation name
+	Name         string // Unique annotation name.
 	Flags        annotFlag
 	IconStyle    textAnnotStyle
 	Appearance   *XObject // Optional; if nil the IconStyle is used; overrides the IconStyle if non-nil.
 	Color
 
-	rect   Rect // Supplied by DrawAnnotation; The annotation rectangle, defining the location of the annotation on the page in default user space units.
+	rect   Rect //The annotation rectangle, defining the location of the annotation on the page in default user space units.
 	refnum int
 }
 
@@ -79,7 +84,7 @@ func (t *TextAnnot) encode(w io.Writer) (int, error) {
 	}...)
 
 	if t.Appearance != nil {
-		fields = append(fields, field{"/AP", subdict(64, []field{{"/N", iref(t.Appearance.id())}})})
+		fields = append(fields, field{"/AP", subdict(64, []field{{"/N", iref(t.Appearance)}})})
 	} else {
 		fields = append(fields, field{"/Name", t.IconStyle.String()})
 	}

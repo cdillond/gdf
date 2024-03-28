@@ -108,7 +108,7 @@ func (p preference) String() string {
 }
 
 const (
-	noPref = iota
+	noPref preference = iota
 	UseNone
 	UseOutlines
 	UseThumbs
@@ -124,3 +124,4 @@ const (
 )
 
 var prefs = [...]string{"", "/UseNone", "/UseOutlines", "/UseThumbs", "/UseOC", "/L2R", "/R2L", "/AppDefault", "/None", "/Simplex", "/DuplexFlipShortEdge", "/DuplexFlipShortEdge"}
+var _ = int8(len(prefs)-int(invalidPref)) << 8

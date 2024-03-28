@@ -3,8 +3,6 @@ package gdf
 import (
 	"fmt"
 	"io"
-
-	"golang.org/x/text/encoding/charmap"
 )
 
 // The acroform type represents a document-level parent form. There can be only one acroform per document, but it can have mulitple fields.
@@ -102,7 +100,7 @@ func (a *AcroField) children() []obj {
 func (a *AcroField) encode(w io.Writer) (int, error) {
 	out := []field{
 		{"/FT", a.fieldType.String()},
-		{"/Parent", iref(a.parent.id())},
+		{"/Parent", iref(a.parent)},
 		{"/Kids", []obj{a.child}},
 		{"/T", acrofieldname(a.Name + "_" + itoa(a.id()))}, // should be unique and not empty
 		{"/Ff", uint32(a.Flags)},
@@ -157,6 +155,8 @@ var (
 	ErrChildren = fmt.Errorf("acrofields supported by gdf may have at most 1 child")
 )
 
+// AddAcroField adds an AcroField, whose visible component is w, to p. dst specifies the area of p's user space onto which w is drawn.
+// Once f has been added to p, p MUST be appended to the PDF from which f was derived prior to the invocation of PDF.WriteTo().
 func (p *Page) AddAcroField(w *Widget, f *AcroField, dst Rect) error {
 	if f.child != nil {
 		return ErrChildren
@@ -168,12 +168,8 @@ func (p *Page) AddAcroField(w *Widget, f *AcroField, dst Rect) error {
 	if w.AcroType == AcroText {
 		if cfg, ok := w.cfg.(AcroTextCfg); ok {
 			// Quick way to ensure all /WinAnsiEncoding glyphs are included
-			runes := make([]rune, 0, 256)
-			for c := 0; c < 256; c++ {
-				runes = append(runes, charmap.Windows1252.DecodeByte(byte(c)))
-			}
-			for i := range runes {
-				GlyphAdvance(runes[i], cfg.Font)
+			for i := range w1252 {
+				GlyphAdvance(w1252[i], cfg.Font)
 			}
 			fonts := f.parent.resources.Fonts
 			var i int

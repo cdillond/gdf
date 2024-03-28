@@ -78,10 +78,10 @@ func writeTrailer(p *PDF, w io.Writer) error {
 	fields := []field{
 		{"/Size", len(p.xref)},
 		{"/ID", slices.Concat([]byte("[<"), idx, []byte("> <"), idx, []byte(">]"))},
-		{"/Root", iref(1)},
+		{"/Root", "1\x200\x20R"},
 	}
 	if p.info != nil {
-		fields = append(fields, field{"/Info", iref(p.info.id())})
+		fields = append(fields, field{"/Info", iref(p.info)})
 	}
 	buf := dict(512, fields)
 	buf = append(buf, "startxref\n"...)

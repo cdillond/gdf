@@ -7,27 +7,22 @@ import (
 )
 
 func calculateWidths(f *Font) {
-	bs := make([]int, 256)
+	var charWidths [256]int
 	for char, adv := range f.charset {
-		b, err := f.enc.Bytes([]byte(string(char)))
-		if err == nil && len(b) == 1 {
-			bs[b[0]] = adv
-		}
+		charWidths[rtoc(char)] = adv
 	}
-	var fc, lc int
-	var first bool
-	for i, b := range bs {
-		if b != 0 {
-			lc = i
-			if !first {
-				fc = i
-				first = true
-			}
-		}
+	// find first and last used chars
+	var fc int
+	for fc < len(charWidths) && charWidths[fc] == 0 {
+		fc++
+	}
+	var lc = len(charWidths) - 1
+	for lc > -1 && charWidths[lc] == 0 {
+		lc--
 	}
 	f.firstChar = fc
 	f.lastChar = lc
-	f.widths = bs[f.firstChar : f.lastChar+1]
+	f.widths = charWidths[f.firstChar : f.lastChar+1]
 }
 
 // Returns the advance of r in font units.

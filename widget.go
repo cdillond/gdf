@@ -7,18 +7,17 @@ import (
 
 // A Widget is an annotation that serves as the visibile representation of an interactive acroForm field.
 type Widget struct {
-	AcroType acroType
-	Flags    annotFlag // 12.5.3 annotation flags
-	//H            string highlighting mode
+	AcroType     acroType
+	Flags        annotFlag // 12.5.3 annotation flags
 	User         string
-	rect         Rect // location of the widget on the parent page
 	ModDate      time.Time
 	CreationDate time.Time
 	Subject      string
 	Open         bool
 	Name         string // unique text string identifiying the widget
 	Opts         []string
-
+	//H            string highlighting mode
+	rect      Rect // location of the widget on the parent page
 	cfg       WidgetCfger
 	acrofield *AcroField
 	page      *Page
@@ -44,8 +43,8 @@ func (a *Widget) encode(w io.Writer) (int, error) {
 		{"/F", uint32(a.Flags)}, // Always print widget annotations.
 		{"/Rect", a.rect},
 		{"/AP", a.cfg.bytes()}, // Required for all widgets supported by gdf.
-		{"/Parent", iref(a.acrofield.id())},
-		{"/P", iref(a.page.id())},
+		{"/Parent", iref(a.acrofield)},
+		{"/P", iref(a.page)},
 	}...)
 
 	// optional fields
@@ -97,11 +96,16 @@ func NewWidget(cfg WidgetCfger) *Widget {
 	return w
 }
 
+// An interface used to configure Widgets and their associated AcroFields. Implemented by AcroTextCfg and CheckboxCfg.
 type WidgetCfger interface {
 	configure(*Widget)
 	bytes() []byte
 }
 
+/*
+Implements WidgetCfger. AcroTextCfgs can be used to instantiate text-type AcroFields. The PrintAnnot
+flag should be set in almost all cases. The Appearance *XObject can be left nil.
+*/
 type AcroTextCfg struct {
 	Flags       annotFlag
 	Appearance  *XObject
@@ -121,9 +125,11 @@ func (a AcroTextCfg) bytes() []byte {
 	if a.Appearance == nil {
 		return nil
 	}
-	return subdict(64, []field{{"/N", iref(a.Appearance.id())}})
+	return subdict(64, []field{{"/N", iref(a.Appearance)}})
 }
 
+// Implements WidgetCfger. The PrintAnnot flag should be set in almost all cases. The Off and On *XObjects are mandatory,
+// but can be reused by multiple Widgets.
 type CheckboxCfg struct {
 	Flags       annotFlag
 	Off, On     *XObject
@@ -141,8 +147,8 @@ func (c CheckboxCfg) bytes() []byte {
 		return nil
 	}
 	b := subdict(64, []field{
-		{"/Off", iref(c.Off.id())},
-		{"/On", iref(c.On.id())},
+		{"/Off", iref(c.Off)},
+		{"/On", iref(c.On)},
 	})
 	return subdict(128, []field{{"/N", b}})
 }

@@ -57,7 +57,7 @@ func (s *stream) encode(w io.Writer) (int, error) {
 			[]field{
 				{"/Filter", "/FlateDecode"},
 				{"/Length1", dlen},
-				{"/Length", iref(s.cLen.id())},
+				{"/Length", iref(s.cLen)},
 			}, s.extras...)),
 			sos...))
 		if err != nil {
