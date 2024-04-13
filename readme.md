@@ -60,7 +60,7 @@ The PDF specification allows for several different types of font. gdf supports o
 While text can be drawn directly to a `ContentStream` or `XObject` by calling methods like `ContentStream.ShowString()`, the `TextController` type implements line-breaking and text-shaping algorithms, and simplifies text formatting by offering an easier to use API.  
 
 ## Annotations and AcroForms
-Annotations are objects rendered by the PDF viewer on a `Page` that are not part of the `Page`'s `ContentStream`. gdf supports 2 kinds of annotations: `TextAnnots` and `Widgets`. To a far greater extent than the graphics objects controlled by the `ContentStream`, the visual appearance of an annotation depends on the PDF viewing software.
+Annotations are objects rendered by the PDF viewer on a page that are not part of the `Page`'s `ContentStream`. gdf supports 2 kinds of annotations: `TextAnnots` and `Widgets`. To a far greater extent than the graphics objects controlled by the `ContentStream`, the visual appearance of an annotation depends on the PDF viewing software.
 
 `Widget` annotations are the visual representations of an AcroForm field, and must be paired with an `AcroField` object. gdf supports only a subset of AcroForm capabilities. Whereas the PDF specification describes AcroForms as similar to HTML forms, which are intended to be "submitted" and to trigger an action on submission, the facilities provided by gdf allow only for the user to manipulate the `Widget`'s state without submitting the form and/or triggering an action.
 

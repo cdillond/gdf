@@ -3,6 +3,7 @@ package ttf
 import (
 	"bytes"
 	"encoding/binary"
+	"fmt"
 	"sort"
 
 	"github.com/go-text/typesetting/opentype/loader"
@@ -22,7 +23,7 @@ const (
 	Maxp TableTag = 'm'<<24 | 'a'<<16 | 'x'<<8 | 'p'
 )
 
-var pdfTables = []TableTag{
+var pdfTables = [...]TableTag{
 	//1330851634, // OS/2
 	Cmap, // cmap
 	Glyf, // glyf
@@ -62,103 +63,95 @@ func Subset(f *sfnt.Font, src []byte, cutset map[rune]struct{}) ([]byte, error) 
 		return nil, err
 	}
 
-	head, err := ld.RawTable(loader.Tag(Head))
+	headRaw, err := ld.RawTable(loader.Tag(Head))
 	if err != nil {
 		return nil, err
 	}
-	headP, _, err := tables.ParseHead(head)
+	head, _, err := tables.ParseHead(headRaw)
 	if err != nil {
 		return nil, err
 	}
-	isLong := headP.IndexToLocFormat == 1
+	isLong := head.IndexToLocFormat == 1
 
-	loca, err := ld.RawTable(loader.Tag(Loca))
+	locaRaw, err := ld.RawTable(loader.Tag(Loca))
 	if err != nil {
 		return nil, err
 	}
-	locaP, err := tables.ParseLoca(loca, f.NumGlyphs(), isLong)
+	loca, err := tables.ParseLoca(locaRaw, f.NumGlyphs(), isLong)
 	if err != nil {
 		return nil, err
 	}
 
-	glyf, err := ld.RawTable(loader.Tag(Glyf))
+	glyfRaw, err := ld.RawTable(loader.Tag(Glyf))
 	if err != nil {
 		return nil, err
 	}
 	// include glyphs that are components of composite glyphs
-	var composits = []uint32{}
-	for i := range glyphset { //i := 0; i < len(locaP); i++ {
+	var composites = []uint32{}
+	n := uint32(len(loca))
+	for i := range glyphset {
 		var offset, next uint32
-		if i < uint32(len(locaP)-1) {
-			offset = locaP[i]
-			next = locaP[i+1]
-		} else if i == uint32(len(locaP)-1) {
-			offset = locaP[i]
-			next = offset
+		if i < n-1 {
+			offset = loca[i]
+			next = loca[i+1]
+		} else if i == n-1 {
+			continue
 		} else {
-			continue // should not happen
+			return nil, fmt.Errorf("invalid glyph ID or loca table")
+		}
+		if next == offset {
+			continue
 		}
 		// per the spec, loca[n] must always be less than or equal to loca[n+1]
-		if next < offset {
-			continue
+		if next < offset || int(next) > len(glyfRaw) {
+			return nil, fmt.Errorf("invalid loca table")
 		}
-		// this should not happen
-		if next > uint32(len(glyf)) {
-			break
-		}
-		g, _, err := tables.ParseGlyph(glyf[offset:next])
+		g, _, err := tables.ParseGlyph(glyfRaw[offset:next])
 		if err != nil {
-			continue
+			return nil, err
 		}
-		switch v := g.Data.(type) {
-		case tables.CompositeGlyph:
-			for _, gp := range v.Glyphs {
-				if _, seen := glyphset[uint32(gp.GlyphIndex)]; !seen {
-					composits = append(composits, uint32(gp.GlyphIndex))
+
+		if cGlyph, ok := g.Data.(tables.CompositeGlyph); ok {
+			for _, cGlyphPart := range cGlyph.Glyphs {
+				if _, seen := glyphset[uint32(cGlyphPart.GlyphIndex)]; !seen {
+					composites = append(composites, uint32(cGlyphPart.GlyphIndex))
 				}
 			}
-		default:
-			continue
 		}
 	}
 	// do these here instead of modifying the object that's being ranged over in the previous loop
-	for _, comp := range composits {
+	for _, comp := range composites {
 		glyphset[comp] = struct{}{}
 	}
-	glyphs = append(glyphs, composits...)
+	glyphs = append(glyphs, composites...)
 	sort.Slice(glyphs, func(i, j int) bool { return glyphs[i] < glyphs[j] })
 
+	// loop back over the loca table and zero out the locations of unused glyphs
 	var finalOffset uint32
 	var final uint32
-	for i := 0; i < len(locaP); i++ {
-		// assuming this works the same for short and long formats once they've been parsed
+	for i := 0; i < len(loca); i++ {
 		var offset, next uint32
-		if i < len(locaP)-1 {
-			offset = locaP[i]
-			next = locaP[i+1]
+		if i < len(loca)-1 {
+			offset = loca[i]
+			next = loca[i+1]
 		} else {
-			offset = locaP[i]
+			offset = loca[i]
 			next = offset
 		}
 
-		if next < offset {
-			continue
-		}
-		if next > uint32(len(glyf)) {
-			break
+		if next < offset || int(next) > len(glyfRaw) {
+			return nil, fmt.Errorf("invalid loca table")
 		}
 
-		if _, used := glyphset[uint32(i)]; used {
-			continue
-		}
-
-		// zero out old glyph outlines
-		for j := offset; j < next; j++ {
-			glyf[j] = 0
+		if _, used := glyphset[uint32(i)]; !used {
+			// zero out old glyph outlines
+			for j := offset; j < next; j++ {
+				glyfRaw[j] = 0
+			}
 		}
 	}
 	// the loca table needs to be no more than final GID long
-	finalOffset = locaP[glyphs[len(glyphs)-1]+1]
+	finalOffset = loca[glyphs[len(glyphs)-1]+1]
 	final = glyphs[len(glyphs)-1]
 
 	// update the number of glyphs in the maxp table
@@ -174,35 +167,38 @@ func Subset(f *sfnt.Font, src []byte, cutset map[rune]struct{}) ([]byte, error) 
 
 	// truncate the loca table
 	// https://learn.microsoft.com/en-us/typography/opentype/spec/loca
+	// **"In order to compute the length of the last glyph element, there is an extra entry after the last valid index."**
+	// The resulting slice includes the glyph location data that begins at the final valid offset as well as the data
+	// that begins at the offset after that.
 	if isLong {
 		// each offset is 4 bytes
-		loca = loca[:4*(final+2)+1]
+		locaRaw = locaRaw[:4*(final+1)+4+1]
 	} else {
 		// each offset is 2 bytes
-		loca = loca[:2*(final+2)+1]
+		locaRaw = locaRaw[:2*(final+1)+2+1]
 	}
 
 	// truncate the glyf table
-	glyf = glyf[:finalOffset]
+	glyfRaw = glyfRaw[:finalOffset]
 
-	tbl := make([]loader.Table, len(pdfTables))
+	tables := make([]loader.Table, len(pdfTables))
 	for i, tag := range pdfTables {
 		switch tag {
 		case Glyf:
-			tbl[i] = loader.Table{Content: glyf, Tag: loader.Tag(tag)}
+			tables[i] = loader.Table{Content: glyfRaw, Tag: loader.Tag(tag)}
 		case Head:
-			tbl[i] = loader.Table{Content: head, Tag: loader.Tag(tag)}
+			tables[i] = loader.Table{Content: headRaw, Tag: loader.Tag(tag)}
 		case Loca:
-			tbl[i] = loader.Table{Content: loca, Tag: loader.Tag(tag)}
+			tables[i] = loader.Table{Content: locaRaw, Tag: loader.Tag(tag)}
 		case Maxp:
-			tbl[i] = loader.Table{Content: maxp, Tag: loader.Tag(tag)}
+			tables[i] = loader.Table{Content: maxp, Tag: loader.Tag(tag)}
 		default:
 			cnt, err := ld.RawTable(loader.Tag(tag))
 			if err != nil {
 				return nil, err
 			}
-			tbl[i] = loader.Table{Content: cnt, Tag: loader.Tag(tag)}
+			tables[i] = loader.Table{Content: cnt, Tag: loader.Tag(tag)}
 		}
 	}
-	return loader.WriteTTF(tbl), nil
+	return loader.WriteTTF(tables), nil
 }

@@ -28,10 +28,10 @@ func (a *acroform) children() []obj {
 	}
 	return objs
 }
-func (f *acroform) encode(w io.Writer) (int, error) {
-	fields := []field{{"/Fields", f.acrofields}}
-	if f.resources.Fonts != nil {
-		fields = append(fields, field{"/DR", f.resources.bytes()})
+func (a *acroform) encode(w io.Writer) (int, error) {
+	fields := []field{{"/Fields", a.acrofields}}
+	if a.resources.Fonts != nil {
+		fields = append(fields, field{"/DR", a.resources.bytes()})
 	}
 	return w.Write(dict(512, fields))
 }

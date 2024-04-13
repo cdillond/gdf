@@ -44,6 +44,11 @@ func NewXObj(t xType, BBox Rect) *XObject {
 	return x
 }
 
+// Bytes exposes the XObject's underlying byte slice.
+func (x XObject) Bytes() []byte {
+	return x.buf
+}
+
 func (x *XObject) mark(i int) { x.refnum = i }
 func (x *XObject) id() int    { return x.refnum }
 func (x *XObject) children() []obj {

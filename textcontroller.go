@@ -97,7 +97,7 @@ to the formatting directives contained in FormatText:
  1. rune(-1) is interpreted as end of text. Any runes that appear after this character will not be parsed.
  2. rune(-2) is interpreted as a color indicator. This character must be followed by three comma-separated 3-digit integers in [0,255]
     that specify the red, green, and blue components of an RGBColor. (This is equivalent to setting the non-stroking color of the document to
-    RGBColor{R:float64(red)/255, G:float64(green)/255, B:float64(blue)/255}). Example: Hello, \x07127,000,090world\x07000,000,000!
+    RGBColor{R:float64(red)/255, G:float64(green)/255, B:float64(blue)/255}).
  3. rune(-3) toggles bold text on and off.
  4. rune(-4) toggles italic text on and off.
     The bold and italic indicators can be used to switch among fonts in a given font family.
@@ -183,7 +183,6 @@ func (tc *TextController) DrawText(c *ContentStream, area Rect) (Point, bool, er
 	if maxLines < 1 {
 		return *new(Point), false, fmt.Errorf("target area must be at least as tall as the font leading")
 	}
-	//c.QSave()
 	if c.Leading != tc.leading {
 		c.SetLeading(tc.leading)
 	}
@@ -202,14 +201,12 @@ func (tc *TextController) DrawText(c *ContentStream, area Rect) (Point, bool, er
 	}
 	c.TextOffset(area.LLX, area.URY-tc.leading)
 	if err != nil {
-		//c.QRestore()
 		return *new(Point), false, err
 	}
 	tc.writeLines(c, min(int(maxLines), len(tc.breakpoints)))
 	endPt := c.RawTextCursor()
 	err = et()
 	if err != nil {
-		//c.QRestore()
 		return *new(Point), false, err
 	}
 	return endPt, tc.n == len(tc.tokens), nil
@@ -424,7 +421,7 @@ type node struct {
 	dSum      float64 // sum of the demerits for all nodes in the optimal path leading to and including the current node
 }
 
-// The algorithm used here - a modified version of the Knuth-Plass linebreaking algorithm - has O(n²) time complexity, but the value of n is
+// The algorithm used here - a modified version of the Knuth-Plass line-breaking algorithm - has O(n²) time complexity, but the value of n is
 // effectively limited by the squishTolerance and stretchTolerance. There are pathological cases that can break the algorithm. In such cases,
 // the tolerances can be expanded - but this is doubly bad because it can result in worse-looking paragraphs that take much longer to process.
 // Alternative algorithms either cannot be adopted to text that includes optional hyphenated breaks and/or negative glyph advances, or find

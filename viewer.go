@@ -1,5 +1,6 @@
 package gdf
 
+// A ViewPrefs struct can be used to configure details of how the PDF viewer handles the output file.
 type ViewPrefs struct {
 	HideToolbar           bool
 	HideMenu              bool

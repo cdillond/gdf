@@ -20,10 +20,10 @@ type catalog struct {
 func (c *catalog) id() int { return c.refnum }
 func (c *catalog) children() []obj {
 	var i int
-	out := make([]obj, 1+oneif(c.Acroform != nil)+len(c.xobjs)+len(c.streams))
+	out := make([]obj, 1+oneif(len(c.Acroform.acrofields) > 0)+len(c.xobjs)+len(c.streams))
 	out[i] = c.Pages
 	i++
-	if c.Acroform != nil {
+	if len(c.Acroform.acrofields) > 0 {
 		out[i] = c.Acroform
 		i++
 	}
