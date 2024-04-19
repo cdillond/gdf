@@ -17,8 +17,9 @@ type Page struct {
 // A resourceDict holds references to resources used by the content stream. When the PDF is built, this is promoted to part of the Page object dictionary.
 // It is easier to group the resourceDict with the ContentStream, since doing so allows for Form XObjects to include resources of their own.
 type resourceDict struct {
-	Fonts []*Font // *Fonts
-	XObjs []*XObject
+	Fonts     []*Font
+	XObjs     []*XObject
+	ExtGState []*extGS
 
 	Widgets    []*Widget
 	TextAnnots []*TextAnnot
@@ -40,7 +41,7 @@ func (r resourceDict) bytes() []byte {
 		return []byte("<<>>")
 	}
 
-	fields := make([]field, 0, 2)
+	fields := make([]field, 0, 3)
 	// Font Subdict
 	if len(r.Fonts) > 0 {
 		ffields := make([]field, len(r.Fonts))
@@ -51,6 +52,7 @@ func (r resourceDict) bytes() []byte {
 			"/Font", subdict(128, ffields),
 		})
 	}
+	// XObjs Subdict
 	if len(r.XObjs) > 0 {
 		xfields := make([]field, len(r.XObjs))
 		for i := range r.XObjs {
@@ -58,6 +60,16 @@ func (r resourceDict) bytes() []byte {
 		}
 		fields = append(fields, field{
 			"/XObject", subdict(128, xfields),
+		})
+	}
+	// ExtGState Subdict
+	if len(r.ExtGState) > 0 {
+		efields := make([]field, len(r.ExtGState))
+		for i := range r.ExtGState {
+			efields[i] = field{"/GS" + itoa(i), iref(r.ExtGState[i])}
+		}
+		fields = append(fields, field{
+			"/ExtGState", subdict(128, efields),
 		})
 	}
 	return subdict(256, fields)
@@ -105,12 +117,15 @@ func (p *PDF) ReplacePage(page *Page, i int) error {
 func (p *Page) mark(i int) { p.refnum = i }
 func (p *Page) id() int    { return p.refnum }
 func (p *Page) children() []obj {
-	out := make([]obj, 0, len(p.Content.resources.Fonts)+len(p.Content.resources.XObjs)+1+(len(p.Content.resources.Widgets)))
+	out := make([]obj, 0, len(p.Content.resources.Fonts)+len(p.Content.resources.XObjs)+len(p.Content.resources.ExtGState)+1+(len(p.Content.resources.Widgets)))
 	for i := range p.Content.resources.Fonts {
 		out = append(out, p.Content.resources.Fonts[i])
 	}
 	for i := range p.Content.resources.XObjs {
 		out = append(out, p.Content.resources.XObjs[i])
+	}
+	for i := range p.Content.resources.ExtGState {
+		out = append(out, p.Content.resources.ExtGState[i])
 	}
 	for i := range p.Content.resources.TextAnnots {
 		out = append(out, p.Content.resources.TextAnnots[i])

@@ -94,6 +94,7 @@ func (c *ContentStream) DrawXObj(x *XObject) {
 	if i == len(c.resources.XObjs) {
 		c.resources.XObjs = append(c.resources.XObjs, x)
 	}
+
 	c.buf = append(c.buf, "/P"...)
 	c.buf = itobuf(i, c.buf)
 	c.buf = append(c.buf, '\x20')

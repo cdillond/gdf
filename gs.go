@@ -10,28 +10,29 @@ type GS struct {
 	LineJoin
 	DashPattern
 	PathState
-	CurPt           Point      // Current path point
-	NColorSpace     ColorSpace // non-stroking
-	SColorSpace     ColorSpace // stroking
-	NColor          Color      // non-stroking
-	SColor          Color      // stroking
-	LineWidth       float64
-	MiterLimit      float64
-	RenderingIntent string
-	StrokeAdj       bool
-	BlendMode       string
-	SoftMask        string
-	AlphaConstant   float64
-	AlphaSource     bool
-	BPComp          string
-	Overprint       bool
-	OverprintMode   uint
-	BlackGen        string
-	UndercolorRem   string
-	Transfer        string
-	Halftone        string
-	Flatness        float64
-	Smoothness      float64
+	CurPt               Point      // Current path point
+	NColorSpace         ColorSpace // non-stroking
+	SColorSpace         ColorSpace // stroking
+	NColor              Color      // non-stroking
+	SColor              Color      // stroking
+	LineWidth           float64
+	MiterLimit          float64
+	RenderingIntent     string
+	StrokeAdj           bool
+	BlendMode           string
+	SoftMask            string
+	AlphaConstant       float64
+	StrokeAlphaConstant float64
+	AlphaSource         bool
+	BPComp              string
+	Overprint           bool
+	OverprintMode       uint
+	BlackGen            string
+	UndercolorRem       string
+	Transfer            string
+	Halftone            string
+	Flatness            float64
+	Smoothness          float64
 }
 
 type LineCap uint
@@ -64,6 +65,24 @@ const (
 	Clipping
 )
 
+type BlendMode uint
+
+// 11.3.5.2 Separable blend modes
+const (
+	Normal BlendMode = iota
+	Multiply
+	Screen
+	Darken
+	Lighten
+	ColorDodge
+	ColorBurn
+	HardLight
+	SoftLight
+	Overlay
+	Difference
+	Exclusion
+)
+
 func newGS() GS {
 	out := new(GS)
 	out.HScale = 100
@@ -77,7 +96,6 @@ func (c *ContentStream) QSave() {
 	c.gSStack = append(c.gSStack, g)
 	c.stack = append(c.stack, gState)
 	c.buf = append(c.buf, op_q...)
-	//c.buf.Write([]byte("q\n"))
 }
 
 // QRestore pops the most recent addition to c's GSStack off the stack and
@@ -95,7 +113,6 @@ func (c *ContentStream) QRestore() error {
 	c.GS = c.gSStack[len(c.gSStack)-1]
 	c.gSStack = c.gSStack[:len(c.gSStack)-1]
 	c.buf = append(c.buf, op_Q...)
-	//c.buf.Write([]byte("Q\n"))
 	return nil
 }
 
@@ -150,4 +167,36 @@ func (c *ContentStream) SetRenderIntent(n string) {
 func (c *ContentStream) SetFlatness(f float64) {
 	c.Flatness = f
 	c.buf = cmdf(c.buf, op_i, f)
+}
+
+// SetAlphaConst sets c's non-stroking or stroking alpha constant to a, which must be a value in [0.0, 1.0], where
+// 0 corresponds to full transparency and 1 corresponds to full opacity.
+func (c *ContentStream) SetAlphaConst(a float64, stroke bool) {
+	key := "/ca"
+	switch stroke {
+	case false:
+		c.AlphaConstant = a
+	case true:
+		key = "/CA"
+		c.StrokeAlphaConstant = a
+	}
+	c.buf = append(c.buf, "/GS"+itoa(len(c.resources.ExtGState))+"\x20gs\n"...)
+	c.resources.ExtGState = append(c.resources.ExtGState, &extGS{
+		fields: []field{{key: key, val: a}},
+	})
+}
+
+// SetExtGS sets c's graphic state to extGS. Use with caution, and refer to 8.4.5 / Table 57 of the PDF spec.
+func (c *ContentStream) SetExtGS(extGState map[string]any) {
+	fields := make([]field, len(extGState))
+	var i int
+	for k, v := range extGState {
+		fields[i] = field{key: k, val: v}
+		i++
+	}
+	c.buf = append(c.buf, "/GS"+itoa(len(c.resources.ExtGState))+"\x20gs\n"...)
+	c.resources.ExtGState = append(c.resources.ExtGState, &extGS{
+		fields: fields,
+	})
+
 }

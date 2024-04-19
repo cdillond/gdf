@@ -13,14 +13,21 @@ type Filter uint
 
 const (
 	Flate Filter = iota
+	DCTDecode
 	NoFilter
 	invalidFilter
 )
 
-var filters = [...]string{"/FlateDecode", ""}
+var filters = [...]string{"/FlateDecode", "/DCTDecode", ""}
 
-func (f Filter) isValid() bool  { return f < invalidFilter }
-func (f Filter) String() string { return filters[oneif(!f.isValid())] }
+func (f Filter) isValid() bool { return f < invalidFilter }
+func (f Filter) String() string {
+	var s string
+	if f.isValid() {
+		s = filters[f]
+	}
+	return s
+}
 
 // n records the number of bytes written to w; the io.Writer.Write(p) method returns the number of bytes from p consumed by the writer.
 // This is needed to determine the length of the encoded portion of a compressed resource stream.

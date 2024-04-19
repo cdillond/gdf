@@ -3,3 +3,4 @@ content/*
 old/*
 *.json
 .vscode/*
+*/*/test/*

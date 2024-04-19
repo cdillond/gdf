@@ -85,7 +85,7 @@ func (c *ContentStream) Circle(x, y, r float64) {
 	pointBy := r * 0.5195704027385128
 
 	endX := r * 0.70710678118654752
-	endY := r * 0.70710678118654752
+	endY := endX
 
 	// This forms the upper-right quadrant of the circle.
 	c.buf = cmdf(c.buf, op_c,
@@ -130,6 +130,14 @@ func (c *ContentStream) Circle(x, y, r float64) {
 		x+pointBx, y-pointBy,
 		x+pointAx, y-pointAy,
 		x+r, y)
+}
+
+func (c *ContentStream) Ellipse(x, y, rx, ry float64) {
+	// rx is 1
+	//c.QSave()
+	c.Concat(ScaleBy(1, ry/rx))
+	c.Circle(x, y, rx)
+	//c.QRestore()
 }
 
 // ClosePath closes the current path; h.

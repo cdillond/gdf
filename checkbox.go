@@ -1,36 +1,17 @@
 package gdf
 
-func checkOn(r Rect) *XObject {
-	box := Point{0, 0}.ToRect(r.Width(), r.Height())
-	on := NewXObj(XForm, box)
-	box = box.Bounds(Margins{1, 1, 1, 1})
-	on.Re2(box)
-	on.Stroke()
-	on.DrawLine(box.LLX+3, box.LLY+3, box.URX-3, box.URY-3)
-	on.DrawLine(box.LLX+3, box.URY-3, box.URX-3, box.LLY+3)
+func checkOn() *XObject {
+	box := Rect{0, 0, 72, 72}
+	on := NewFormXObj(make([]byte, 0, 512), box)
+	on.SetLineWidth(2)
+	on.DrawLine(box.LLX+12, box.LLY+12, box.URX-12, box.URY-12)
+	on.DrawLine(box.LLX+12, box.URY-12, box.URX-12, box.LLY+12)
 	return on
 }
 
-func checkOnNoBorder(r Rect) *XObject {
-	box := Point{0, 0}.ToRect(r.Width(), r.Height())
-	on := NewXObj(XForm, box)
-	on.DrawLine(box.LLX+3, box.LLY+3, box.URX-3, box.URY-3)
-	on.DrawLine(box.LLX+3, box.URY-3, box.URX-3, box.LLY+3)
-	return on
-}
-
-func checkOff(r Rect) *XObject {
-	box := Point{0, 0}.ToRect(r.Width(), r.Height())
-	off := NewXObj(XForm, box)
-	box = box.Bounds(Margins{1, 1, 1, 1})
-	off.Re2(box)
-	off.Stroke()
-	return off
-}
-
-func checkOffNoBorder(r Rect) *XObject {
-	box := Point{0, 0}.ToRect(r.Width(), r.Height())
-	off := NewXObj(XForm, box)
+func checkOff() *XObject {
+	box := Rect{0, 0, 72, 72}
+	off := NewFormXObj(make([]byte, 0, 512), box)
 	return off
 }
 
@@ -43,15 +24,10 @@ Checkbox design can be reused for any Checkbox-type (Button) acroform fields of 
 on the PDF viewer used to render it. This can be especially noticeable when withBorder is true. It is often preferable to draw the Checkbox
 border separately.
 */
-func DefaultCheckbox(size Rect, withBorder bool) CheckboxCfg {
-	if withBorder {
-		return CheckboxCfg{
-			On:  checkOn(size),
-			Off: checkOff(size),
-		}
-	}
+func DefaultCheckbox() CheckboxCfg {
 	return CheckboxCfg{
-		On:  checkOnNoBorder(size),
-		Off: checkOffNoBorder(size),
+		On:    checkOn(),
+		Off:   checkOff(),
+		Flags: PrintAnnot,
 	}
 }

@@ -156,8 +156,9 @@ var (
 )
 
 // AddAcroField adds an AcroField, whose visible component is w, to p. dst specifies the area of p's user space onto which w is drawn.
+// If strokeBorder is true, dst is added to the page's path, and the border is stroked with the current stroke width and stroke color.
 // Once f has been added to p, p must be appended to the PDF from which f was derived prior to the invocation of PDF.WriteTo().
-func (p *Page) AddAcroField(w *Widget, f *AcroField, dst Rect) error {
+func (p *Page) AddAcroField(w *Widget, f *AcroField, dst Rect, strokeBorder bool) error {
 	if f.child != nil {
 		return ErrChildren
 	}
@@ -193,5 +194,9 @@ func (p *Page) AddAcroField(w *Widget, f *AcroField, dst Rect) error {
 	w.page = p
 	w.acrofield = f
 	p.Content.resources.Widgets = append(p.Content.resources.Widgets, w)
+	if strokeBorder {
+		p.Content.Re2(dst)
+		p.Content.Stroke()
+	}
 	return nil
 }

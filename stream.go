@@ -35,10 +35,11 @@ func (s *stream) encode(w io.Writer) (int, error) {
 	if !(s.Filter.isValid()) {
 		return 0, fmt.Errorf("invalid compression filter %d", s.Filter)
 	}
+
 	// It's not worth it to compress data that's already small.
-	if len(s.buf) < 1024 {
-		s.Filter = NoFilter
-	}
+	//if len(s.buf) < 1024 {
+	//	s.filters[0] = NoFilter
+	//}
 
 	// 7.3.8.2: "There may be an additional EOL marker, preceding endstream, that is not included in the count and is not logically part of the stream data."
 	// It is simpler just to remove trailing \n or \r bytes.
@@ -55,7 +56,7 @@ func (s *stream) encode(w io.Writer) (int, error) {
 		// For longer streams, writes are made directly to w. The compressed length is recorded as an indirectly-referenced object.
 		n, err := w.Write(append(dict(512, append(
 			[]field{
-				{"/Filter", "/FlateDecode"},
+				{"/Filter", s.Filter.String()},
 				{"/Length1", dlen},
 				{"/Length", iref(s.cLen)},
 			}, s.extras...)),
@@ -82,7 +83,7 @@ func (s *stream) encode(w io.Writer) (int, error) {
 		}
 		n, err := w.Write(append(dict(512, append(
 			[]field{
-				{"/Filter", "/FlateDecode"},
+				{"/Filter", s.Filter.String()},
 				{"/Length1", dlen},
 				{"/Length", t},
 			}, s.extras...)),
@@ -94,13 +95,15 @@ func (s *stream) encode(w io.Writer) (int, error) {
 		t64, err := encbuf.WriteTo(w)
 		return n + int(t64), err
 	}
+	fields := make([]field, 0, 2+len(s.extras))
+	fields = append(fields, field{"/Length", dlen})
+	if s.Filter == DCTDecode {
+		fields = append(fields, field{"/Filter", DCTDecode.String()})
+	}
+	fields = append(fields, s.extras...)
 
 	// Uncompressed streams are written directly to w.
-	n, err := w.Write(append(dict(256, append(
-		[]field{
-			{"/Length", dlen},
-		}, s.extras...)),
-		sos...))
+	n, err := w.Write(append(dict(256, fields), sos...))
 	if err != nil {
 		return n, err
 	}
