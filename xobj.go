@@ -24,7 +24,7 @@ type XImage struct {
 }
 
 // NewImage returns an Image that can be drawn to ContentStreams derived from p.
-func (p PDF) NewImage(x XImage) *Image {
+func (p *PDF) NewImage(x XImage) *Image {
 	img := &Image{
 		Data:             x.Data,
 		Width:            x.Width,

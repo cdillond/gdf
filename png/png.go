@@ -20,12 +20,11 @@ func DecodeFile(path string) (gdf.XImage, error) {
 }
 
 // Decode interprets b as data representing a PNG image. It decodes the image and returns
-// a *gdf.Ximage and an error. The if the error is nil, the returned XObject
-// can be drawn to a ContentStream. This function may not be ideal for all varieties of PNG.
+// a *gdf.XImage and an error. This function may not be ideal for all varieties of PNG.
 // In particular, grayscale images with alpha channels are converted to their NRGBA equivalents,
 // which may have the effect of significantly increasing the image's encoding size. Applications
 // sensitive to performance may benefit from processing the image data separately and then
-// generating the image's XObject representation by way of the gdf.NewImageXObj function.
+// generating the image's XImage representation by way of the gdf.LoadXImage function.
 func Decode(b []byte) (gdf.XImage, error) {
 	// See http://www.libpng.org/pub/png/spec/1.2/png-1.2-pdg.html for details.
 	cfg, err := std.DecodeConfig(bytes.NewReader(b))
@@ -135,7 +134,6 @@ func Decode(b []byte) (gdf.XImage, error) {
 
 	}
 	x.BitsPerComponent = csize
-	//x.AppliedFilter = gdf.Flate
 	if hasAlpha {
 		mask := x
 		mask.Data = alpha

@@ -38,11 +38,13 @@ func (x *XImage) FlateCompress() error {
 	return nil
 }
 
+// SaveTo writes the gob encoding of x to w.
 func (x XImage) SaveTo(w io.Writer) error {
 	enc := gob.NewEncoder(w)
 	return enc.Encode(x)
 }
 
+// LoadXImage reads a gob-encoded XImage from r.
 func LoadXImage(r io.Reader) (XImage, error) {
 	dec := gob.NewDecoder(r)
 	var v XImage
