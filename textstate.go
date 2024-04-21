@@ -22,10 +22,10 @@ const (
 	StrokeTextAddPath
 	FillStrokeTextAddPath
 	AddTextPath
-	invalid
+	badRenderMode
 )
 
-func (r RenderMode) isValid() bool { return r < invalid }
+func (r RenderMode) isValid() bool { return r < badRenderMode }
 
 // SetCharSpace sets the content stream's character spacing (c.TextState.CharSpace) f.
 func (c *ContentStream) SetCharSpace(f float64) {
@@ -83,16 +83,16 @@ func (c *ContentStream) SetRise(f float64) {
 	c.buf = cmdf(c.buf, op_Ts, f)
 }
 
-// DrawXObj draws x to c at c's current point.
-func (c *ContentStream) DrawXObj(x *XObject) {
+// DrawXContent draws x to c at c's current point.
+func (c *ContentStream) DrawXContent(x *XContent) {
 	var i int
-	for ; i < len(c.resources.XObjs); i++ {
-		if c.resources.XObjs[i] == x {
+	for ; i < len(c.resources.XForms); i++ {
+		if c.resources.XForms[i] == x {
 			break
 		}
 	}
-	if i == len(c.resources.XObjs) {
-		c.resources.XObjs = append(c.resources.XObjs, x)
+	if i == len(c.resources.XForms) {
+		c.resources.XForms = append(c.resources.XForms, x)
 	}
 
 	c.buf = append(c.buf, "/P"...)
@@ -101,26 +101,59 @@ func (c *ContentStream) DrawXObj(x *XObject) {
 	c.buf = append(c.buf, op_Do...)
 }
 
-// DrawXObjTo adjusts the CTM such that the contents of x are drawn to dst.
-func (c *ContentStream) DrawXObjTo(dst Rect, x *XObject) {
+func (c *ContentStream) DrawImage(img *Image) {
 	var i int
-	for ; i < len(c.resources.XObjs); i++ {
-		if c.resources.XObjs[i] == x {
+	for ; i < len(c.resources.Images); i++ {
+		if c.resources.Images[i] == img {
 			break
 		}
 	}
-	if i == len(c.resources.XObjs) {
-		c.resources.XObjs = append(c.resources.XObjs, x)
+	if i == len(c.resources.Images) {
+		c.resources.Images = append(c.resources.Images, img)
+	}
+	c.buf = append(c.buf, "/Im"...)
+	c.buf = itobuf(i, c.buf)
+	c.buf = append(c.buf, '\x20')
+	c.buf = append(c.buf, op_Do...)
+}
+
+func (c *ContentStream) DrawImageTo(dst Rect, x *Image) {
+	xScale := dst.Width()
+	yScale := dst.Height()
+	c.QSave()
+	c.Concat(Translate(dst.LLX, dst.LLY))
+	c.Concat(ScaleBy(xScale, yScale))
+	var i int
+	for ; i < len(c.resources.Images); i++ {
+		if c.resources.Images[i] == x {
+			break
+		}
+	}
+	if i == len(c.resources.Images) {
+		c.resources.Images = append(c.resources.Images, x)
 	}
 
+	c.buf = append(c.buf, "/Im"...)
+	c.buf = itobuf(i, c.buf)
+	c.buf = append(c.buf, '\x20')
+	c.buf = append(c.buf, op_Do...)
+	c.QRestore()
+}
+
+// DrawXContent adjusts the CTM such that the contents of x are drawn to dst.
+func (c *ContentStream) DrawXContentTo(dst Rect, x *XContent) {
+	var i int
+	for ; i < len(c.resources.XForms); i++ {
+		if c.resources.XForms[i] == x {
+			break
+		}
+	}
+	if i == len(c.resources.XForms) {
+		c.resources.XForms = append(c.resources.XForms, x)
+	}
 	xScale := dst.Width() / x.BBox.Width()
 	yScale := dst.Height() / x.BBox.Height()
 	c.QSave()
-	inv, err := c.GS.Inverse()
-	if err != nil {
-		inv = NewMatrix()
-	}
-	c.Concat(inv)
 	c.Concat(Translate(dst.LLX-x.BBox.LLX*xScale, dst.LLY-x.BBox.LLY*yScale))
 	c.Concat(ScaleBy(xScale, yScale))
 	c.buf = append(c.buf, "/P"...)

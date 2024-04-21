@@ -1,17 +1,17 @@
 package gdf
 
-func checkOn() *XObject {
+func checkOn() *XContent {
 	box := Rect{0, 0, 72, 72}
-	on := NewFormXObj(make([]byte, 0, 512), box)
+	on := NewXContent(make([]byte, 0, 512), box)
 	on.SetLineWidth(2)
 	on.DrawLine(box.LLX+12, box.LLY+12, box.URX-12, box.URY-12)
 	on.DrawLine(box.LLX+12, box.URY-12, box.URX-12, box.LLY+12)
 	return on
 }
 
-func checkOff() *XObject {
+func checkOff() *XContent {
 	box := Rect{0, 0, 72, 72}
-	off := NewFormXObj(make([]byte, 0, 512), box)
+	off := NewXContent(make([]byte, 0, 512), box)
 	return off
 }
 

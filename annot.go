@@ -32,14 +32,14 @@ const (
 	NewParagraphIcon
 	ParagraphIcon
 	InsertIcon
-	invalidIcon
+	badIcon
 )
 
 var ta_styles = [...]string{"/Comment", "/Key", "/Note", "/Help", "/NewParagraph", "/Paragraph", "/Insert"}
-var _ = int8(int(invalidIcon)-len(ta_styles)) << 8
+var _ = int8(int(badIcon)-len(ta_styles)) << 8
 
 func (t textAnnotStyle) String() string {
-	if t < invalidIcon {
+	if t < badIcon {
 		return ta_styles[t]
 	}
 	return "/Comment"
@@ -59,7 +59,7 @@ type TextAnnot struct {
 	Name         string // Unique annotation name.
 	Flags        annotFlag
 	IconStyle    textAnnotStyle
-	Appearance   *XObject // Optional; if nil the IconStyle is used; overrides the IconStyle if non-nil.
+	Appearance   *XContent // Optional; if nil the IconStyle is used; overrides the IconStyle if non-nil.
 	Color
 
 	rect   Rect //The annotation rectangle, defining the location of the annotation on the page in default user space units.

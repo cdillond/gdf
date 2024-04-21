@@ -9,13 +9,13 @@ func (c *ContentStream) ExtentFU(t []rune) float64 {
 	var spaceCount float64
 	var i int
 	for ; i < len(t)-1; i++ {
-		adv, kern := ShapedGlyphAdv(t[i], t[i+1], c.Font)
+		adv, kern := c.Font.ShapedGlyphAdv(t[i], t[i+1])
 		if t[i] == ' ' {
 			spaceCount++
 		}
 		ext += float64(adv + kern)
 	}
-	ext += float64(GlyphAdvance(t[i], c.Font))
+	ext += float64(c.Font.GlyphAdvance(t[i]))
 	if t[i] == ' ' {
 		spaceCount++
 	}
@@ -35,7 +35,7 @@ func (c *ContentStream) RawExtentFU(t []rune) float64 {
 	var ext float64
 	var spaceCount float64
 	for i := 0; i < len(t); i++ {
-		ext += float64(GlyphAdvance(t[i], c.Font))
+		ext += float64(c.Font.GlyphAdvance(t[i]))
 		if t[i] == ' ' {
 			spaceCount++
 		}
@@ -59,7 +59,7 @@ func (c *ContentStream) ExtentKernsFU(t []rune, kerns []int) (float64, error) {
 	var ext float64
 	var spaceCount float64
 	for i := 0; i < len(t); i++ {
-		ext += float64(GlyphAdvance(t[i], c.Font)) + float64(kerns[i])
+		ext += float64(c.Font.GlyphAdvance(t[i])) + float64(kerns[i])
 		if t[i] == ' ' {
 			spaceCount++
 		}
@@ -85,13 +85,13 @@ func (c *ContentStream) ExtentFontFU(t []rune, f *Font) float64 {
 	var spaceCount float64
 	var i int
 	for ; i < len(t)-1; i++ {
-		adv, kern := ShapedGlyphAdv(t[i], t[i+1], f)
+		adv, kern := f.ShapedGlyphAdv(t[i], t[i+1])
 		if t[i] == ' ' {
 			spaceCount++
 		}
 		ext += float64(adv + kern)
 	}
-	ext += float64(GlyphAdvance(t[i], f))
+	ext += float64(f.GlyphAdvance(t[i]))
 	if t[i] == ' ' {
 		spaceCount++
 	}
@@ -115,6 +115,7 @@ func (c *ContentStream) CenterH(t []rune, rect Rect) float64 {
 }
 
 // CenterV returns the y offset, in points, from the start of rect, needed to center a line of text vertically based on the text's height.
+// This is a naive approach.
 func CenterV(height float64, rect Rect) float64 {
 	return -(rect.URY - rect.LLY - height) / 2
 }

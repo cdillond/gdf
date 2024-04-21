@@ -10,7 +10,9 @@ type catalog struct {
 	prefs    ViewPrefs
 	Acroform *acroform
 
-	xobjs []*XObject
+	images []*Image
+	xforms []*XContent
+	//xobjs []*XObject
 	pageLayout
 	pageMode
 	lang   string
@@ -20,15 +22,19 @@ type catalog struct {
 func (c *catalog) id() int { return c.refnum }
 func (c *catalog) children() []obj {
 	var i int
-	out := make([]obj, 1+oneif(len(c.Acroform.acrofields) > 0)+len(c.xobjs)+len(c.streams))
+	out := make([]obj, 1+oneif(len(c.Acroform.acrofields) > 0)+len(c.images)+len(c.xforms)+len(c.streams))
 	out[i] = c.Pages
 	i++
 	if len(c.Acroform.acrofields) > 0 {
 		out[i] = c.Acroform
 		i++
 	}
-	for j := range c.xobjs {
-		out[i] = c.xobjs[j]
+	for j := range c.images {
+		out[i] = c.images[j]
+		i++
+	}
+	for j := range c.xforms {
+		out[i] = c.xforms[j]
 		i++
 	}
 	for j := range c.streams {
@@ -92,11 +98,11 @@ const (
 	TwoColumnRight
 	TwoPageLeft
 	TwoPageRight
-	invalidPageLayout
+	badPageLayout
 )
 
 func (p pageLayout) String() string {
-	if p < invalidPageLayout {
+	if p < badPageLayout {
 		return pageLayouts[p]
 	}
 	return ""
@@ -104,7 +110,7 @@ func (p pageLayout) String() string {
 
 var pageLayouts = [...]string{"", "/SinglePage", "/OneColumn", "/TwoColumnLeft", "TwoColumnRight", "/TwoPageLeft", "/TwoPageRight"}
 
-var _ = int8(int(invalidPageLayout)-len(pageLayouts)) << 8
+var _ = int8(int(badPageLayout)-len(pageLayouts)) << 8
 
 type pageMode uint
 
@@ -115,15 +121,15 @@ const (
 	FullScreenMode
 	OCMode
 	AttachmentsMode
-	invalidMode
+	badMode
 )
 
 var pageModes = [...]string{"", "/UseNone", "/UseOutlines", "/UseThumbs", "/FullScreen", "/UseOC", "/UseAttachments"}
 
-var _ = int8(int(invalidMode)-len(pageLayouts)) << 8
+var _ = int8(int(badMode)-len(pageLayouts)) << 8
 
 func (p pageMode) String() string {
-	if p < invalidMode {
+	if p < badMode {
 		return pageModes[p]
 	}
 	return ""

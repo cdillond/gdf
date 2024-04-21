@@ -7,13 +7,13 @@ const (
 	DeviceRGB
 	DeviceCMYK
 	PatternCS
-	invalidColorSpace
+	badColorSpace
 )
 
 var colorSpaces = [...]string{"/DeviceGray", "/DeviceRGB", "/DeviceCMYK", "/Pattern"}
-var _ = (int8(invalidColorSpace) - int8(len(colorSpaces))) << 8
+var _ = (int8(badColorSpace) - int8(len(colorSpaces))) << 8
 
-func (c ColorSpace) isValid() bool { return c < invalidColorSpace }
+func (c ColorSpace) isValid() bool { return c < badColorSpace }
 func (c ColorSpace) String() string {
 	if c.isValid() {
 		return colorSpaces[c]

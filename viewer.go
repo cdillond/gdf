@@ -103,7 +103,7 @@ func ptob(p []PageRange) []byte {
 type preference uint
 
 func (p preference) String() string {
-	if p < invalidPref {
+	if p < badPref {
 		return prefs[p]
 	}
 	return ""
@@ -122,8 +122,8 @@ const (
 	Simplex
 	DuplexFlipShortEdge
 	DuplexFlipLongEdge
-	invalidPref
+	badPref
 )
 
 var prefs = [...]string{"", "/UseNone", "/UseOutlines", "/UseThumbs", "/UseOC", "/L2R", "/R2L", "/AppDefault", "/None", "/Simplex", "/DuplexFlipShortEdge", "/DuplexFlipShortEdge"}
-var _ = int8(len(prefs)-int(invalidPref)) << 8
+var _ = int8(len(prefs)-int(badPref)) << 8

@@ -16,14 +16,18 @@ type acroform struct {
 func (a *acroform) mark(i int) { a.refnum = i }
 func (a *acroform) id() int    { return a.refnum }
 func (a *acroform) children() []obj {
-	objs := make([]obj, len(a.acrofields)+len(a.resources.Fonts)+len(a.resources.XObjs))
+	objs := make([]obj, len(a.acrofields)+len(a.resources.Fonts)+len(a.resources.Images)+len(a.resources.XForms))
 	n := copy(objs, a.acrofields)
 	for i := range a.resources.Fonts {
 		objs[n] = a.resources.Fonts[i]
 		n++
 	}
-	for i := range a.resources.XObjs {
-		objs[n] = a.resources.XObjs[i]
+	for i := range a.resources.Images {
+		objs[n] = a.resources.Images[i]
+		n++
+	}
+	for i := range a.resources.XForms {
+		objs[n] = a.resources.XForms[i]
 		n++
 	}
 	return objs
@@ -49,15 +53,15 @@ const (
 	AcroText
 	acroChoice    // TODO
 	acroSignature // TODO
-	invalidAcroType
+	badAcroType
 )
 
 var acroTypes = [...]string{"/Btn", "/Tx", "/Ch", "/Sig"}
 
-// compile time check to make sure invalidAcroType == len(acroTypes)
-var _ = int8(int(invalidAcroType)-len(acroTypes)) << 8
+// compile time check to make sure badAcroType == len(acroTypes)
+var _ = int8(int(badAcroType)-len(acroTypes)) << 8
 
-func (a acroType) isValid() bool { return a < invalidAcroType }
+func (a acroType) isValid() bool { return a < badAcroType }
 func (a acroType) String() string {
 	if a.isValid() {
 		return acroTypes[a]
@@ -170,7 +174,7 @@ func (p *Page) AddAcroField(w *Widget, f *AcroField, dst Rect, strokeBorder bool
 		if cfg, ok := w.cfg.(AcroTextCfg); ok {
 			// Quick way to ensure all /WinAnsiEncoding glyphs are included
 			for i := range w1252 {
-				GlyphAdvance(w1252[i], cfg.Font)
+				cfg.Font.GlyphAdvance(w1252[i])
 			}
 			fonts := f.parent.resources.Fonts
 			var i int
@@ -193,10 +197,10 @@ func (p *Page) AddAcroField(w *Widget, f *AcroField, dst Rect, strokeBorder bool
 	w.rect = dst
 	w.page = p
 	w.acrofield = f
-	p.Content.resources.Widgets = append(p.Content.resources.Widgets, w)
+	p.C.resources.Widgets = append(p.C.resources.Widgets, w)
 	if strokeBorder {
-		p.Content.Re2(dst)
-		p.Content.Stroke()
+		p.C.Re2(dst)
+		p.C.Stroke()
 	}
 	return nil
 }

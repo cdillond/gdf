@@ -11,37 +11,36 @@ import (
 )
 
 // DecodeFile reads the contents of the file at the provided path and then calls Decode.
-func DecodeFile(path string) (*gdf.XObject, error) {
+func DecodeFile(path string) (gdf.XImage, error) {
 	b, err := os.ReadFile(path)
 	if err != nil {
-		return nil, err
+		return *new(gdf.XImage), err
 	}
 	return Decode(b)
 }
 
 // Decode interprets b as data representing a PNG image. It decodes the image and returns
-// a *gdf.XObject and an error. The if the error is nil, the returned XObject
+// a *gdf.Ximage and an error. The if the error is nil, the returned XObject
 // can be drawn to a ContentStream. This function may not be ideal for all varieties of PNG.
 // In particular, grayscale images with alpha channels are converted to their NRGBA equivalents,
 // which may have the effect of significantly increasing the image's encoding size. Applications
 // sensitive to performance may benefit from processing the image data separately and then
 // generating the image's XObject representation by way of the gdf.NewImageXObj function.
-func Decode(b []byte) (*gdf.XObject, error) {
+func Decode(b []byte) (gdf.XImage, error) {
 	// See http://www.libpng.org/pub/png/spec/1.2/png-1.2-pdg.html for details.
 	cfg, err := std.DecodeConfig(bytes.NewReader(b))
 	if err != nil {
-		return nil, err
+		return *new(gdf.XImage), err
 	}
 
-	d := gdf.ImageDict{
+	x := gdf.XImage{
 		Height:     cfg.Height,
 		Width:      cfg.Width,
-		Format:     gdf.PNG,
 		ColorSpace: gdf.DeviceGray,
 	}
 	img, err := std.Decode(bytes.NewReader(b))
 	if err != nil {
-		return nil, err
+		return *new(gdf.XImage), err
 	}
 
 	var colors, alpha []byte
@@ -135,14 +134,15 @@ func Decode(b []byte) (*gdf.XObject, error) {
 		}
 
 	}
-	d.BitsPerComponent = csize
-
+	x.BitsPerComponent = csize
+	//x.AppliedFilter = gdf.Flate
 	if hasAlpha {
-		mask := gdf.NewImageXObj(alpha, d)
-		d.Alpha = mask
+		mask := x
+		mask.Data = alpha
+		x.Alpha = &mask
 	}
 
-	d.ColorSpace = gdf.DeviceRGB
-	cols := gdf.NewImageXObj(colors, d)
-	return cols, nil
+	x.ColorSpace = gdf.DeviceRGB
+	x.Data = colors
+	return x, nil
 }

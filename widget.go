@@ -109,7 +109,7 @@ flag should be set in almost all cases. The Appearance *XObject can be left nil.
 */
 type AcroTextCfg struct {
 	Flags       annotFlag
-	Appearance  *XObject
+	Appearance  *XContent
 	Font        *Font
 	FontSize    float64
 	IsMultiLine bool
@@ -134,7 +134,7 @@ func (a AcroTextCfg) bytes() []byte {
 // but can be reused by multiple Widgets. Implements WidgetCfger.
 type CheckboxCfg struct {
 	Flags       annotFlag
-	Off, On     *XObject
+	Off, On     *XContent
 	IsOnDefault bool
 }
 

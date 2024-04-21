@@ -66,7 +66,7 @@ func includeChildren(pdf *PDF, o obj) {
 				for key := range fnt.charset {
 					tmp[key] = struct{}{}
 				}
-				b, err := ttf.Subset(fnt.Font, fnt.srcb, tmp)
+				b, err := ttf.Subset(fnt.SFNT, fnt.srcb, tmp)
 				if err != nil {
 					log.Println(err.Error())
 				} else {

@@ -25,7 +25,10 @@ type stream struct {
 func (s *stream) mark(i int) { s.refnum = i }
 func (s *stream) id() int    { return s.refnum }
 func (s *stream) children() []obj {
-	if s.Filter == Flate && len(s.buf) > 2048 && s.cLen == nil {
+	if s.Filter == DefaultFilter {
+		s.Filter = Flate
+	}
+	if s.Filter == Flate && len(s.buf) > 4096 && s.cLen == nil {
 		s.cLen = new(lenObj)
 		return []obj{s.cLen}
 	}
@@ -74,7 +77,7 @@ func (s *stream) encode(w io.Writer) (int, error) {
 		return n + t, err
 
 	} else if s.Filter == Flate {
-		// For shorter streams, the content is compressed to a buffer, which is then written to w.
+		// For images and shorter streams, the content is compressed to a buffer, which is then written to w.
 		encbuf := new(bytes.Buffer)
 		encbuf.Grow(dlen + len(eos))
 		t, err := flateCompress(encbuf, s.buf)

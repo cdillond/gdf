@@ -12,15 +12,16 @@ import (
 type Filter uint
 
 const (
-	Flate Filter = iota
+	DefaultFilter Filter = iota
+	Flate
 	DCTDecode
 	NoFilter
-	invalidFilter
+	badFilter
 )
 
-var filters = [...]string{"/FlateDecode", "/DCTDecode", ""}
+var filters = [...]string{"", "/FlateDecode", "/DCTDecode", ""}
 
-func (f Filter) isValid() bool { return f < invalidFilter }
+func (f Filter) isValid() bool { return f < badFilter }
 func (f Filter) String() string {
 	var s string
 	if f.isValid() {

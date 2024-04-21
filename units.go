@@ -52,7 +52,7 @@ var (
 	FivePt    = Margins{5, 5, 5, 5}
 )
 
-// FUToPt cnverts n font units to points given a font size in points. For PDFs, ppem is always 1000.
+// FUToPt converts n font units to points given a font size in points. For PDFs, ppem is always 1000.
 func FUToPt(n, fontSize float64) float64 { return n * fontSize / 1000 }
 
 // PtToFU converts n points to font units given a font size in points. For PDFs, ppem is always 1000.
@@ -84,7 +84,7 @@ func (r Rect) Diagonal() float64 {
 // Angles returns the angle, in radians, formed by the lower side of the rectangle and the lower-left to upper-right diagonal, and that angle's complement.
 func (r Rect) Angles() (float64, float64) {
 	a := math.Atan((r.URY - r.LLY) / (r.URX - r.LLX))
-	return a, 90 - a
+	return a, (90 * Deg) - a
 }
 
 // Landscape returns the rectangle that results from swapping r's x and y values.

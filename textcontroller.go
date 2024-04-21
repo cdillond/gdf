@@ -143,7 +143,7 @@ func NewTextController(src FormatText, lineWidth float64, f FontFamily, cfg Cont
 		tc.curFont = f.Regular
 	}
 
-	spaceAdv := GlyphAdvance('\u0020', f.Regular) // use the regular font as the baseline regardless
+	spaceAdv := f.Regular.GlyphAdvance('\u0020') // use the regular font as the baseline regardless
 	if cfg.IsIndented {
 		tc.firstIndent = 5.0 * float64(spaceAdv)
 	}
@@ -316,7 +316,7 @@ func (tc *TextController) tokenize(src FormatText) []token {
 			run = run[:0]
 			advs = advs[:0]
 			kerns = kerns[:0]
-			adv := GlyphAdvance('\u0020', curFont)
+			adv := curFont.GlyphAdvance('\u0020')
 			out = append(out, skip(adv))
 		case col_tok:
 			if len(run) != 0 {
@@ -403,7 +403,7 @@ func (tc *TextController) tokenize(src FormatText) []token {
 			return out
 		default:
 			run = append(run, src[i])
-			adv, kern := ShapedGlyphAdv(src[i], src[i+1], curFont)
+			adv, kern := curFont.ShapedGlyphAdv(src[i], src[i+1])
 			kerns = append(kerns, kern)
 			advs = append(advs, adv)
 		}
@@ -463,7 +463,7 @@ func (tc *TextController) breakLines(squishTolerance, stretchTolerance float64) 
 			bestDemerits := math.Inf(0)
 			bestSumDemerits := math.Inf(0)
 			// this has to be done on a token-by token basis because the font can change
-			spAdv := float64(GlyphAdvance(' ', curFont))
+			spAdv := float64(curFont.GlyphAdvance('\u0020'))
 			// check if we have a feasible breakpoint
 			for j := lineStart; j < len(activeNodes); j++ {
 

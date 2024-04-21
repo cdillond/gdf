@@ -11,10 +11,10 @@ import (
 
 const ppem = 1000
 
-// A Font represents a TrueType font. Any given Font struct should be used on at most 1 PDF. To use the same underlying
+// A Font represents a TrueType/OpenType font. Any given Font struct should be used on at most 1 PDF. To use the same underlying
 // font on multiple PDF files, derive a new Font struct from the source font file or bytes for each PDF.
 type Font struct {
-	*sfnt.Font
+	SFNT *sfnt.Font // The source TrueType or OpenType font.
 	*simpleFD
 
 	refnum    int
@@ -60,7 +60,7 @@ func LoadTrueType(b []byte, flag FontFlag) (*Font, error) {
 	fd.FontFile2 = out.source
 	fd.FontName = name(bf)
 	out.simpleFD = fd
-	out.Font = fnt
+	out.SFNT = fnt
 	return out, nil
 }
 
@@ -103,6 +103,9 @@ type simpleFD struct {
 // newSimpleFD returns a font descriptor suitable for use with simple (i.e. non Type3, Type0, or MMType1) fonts.
 func newSimpleFD(fnt *sfnt.Font, flag FontFlag, buf *sfnt.Buffer) *simpleFD {
 	fd := new(simpleFD)
+	if flag&Nonsymbolic == 0 && flag&Symbolic == 0 {
+		flag |= Nonsymbolic
+	}
 	fd.Flags = flag
 	res, _ := fontBBox(fnt, buf)
 	fd.FontBBox = []int{int(res.Min.X), int(res.Min.Y), int(res.Max.X), int(res.Max.Y)}
@@ -124,9 +127,9 @@ type FontFlag uint32
 const (
 	FixedPitch  FontFlag = 1 << 0
 	Serif       FontFlag = 1 << 1
-	Symbolic    FontFlag = 1 << 2 // Must be set when Nonsymbolic is not set and vice versa.
+	Symbolic    FontFlag = 1 << 2
 	Script      FontFlag = 1 << 3
-	Nonsymbolic FontFlag = 1 << 5 // Must be set when Symbolic is not set and vice versa.
+	Nonsymbolic FontFlag = 1 << 5
 	Italic      FontFlag = 1 << 6
 	AllCap      FontFlag = 1 << 16
 	SmallCap    FontFlag = 1 << 17
