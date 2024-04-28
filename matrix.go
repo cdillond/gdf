@@ -89,7 +89,7 @@ func Transform(p Point, m Matrix) Point {
 	}
 }
 
-// TransformRect returns the coordinates of the vertices of R transformed by m in the order LL, UL, LR, UR. The returned points do not necessarily form a valid Rect.
+// TransformRect returns the coordinates of the vertices of r transformed by m in the order LL, UL, LR, UR. The returned points do not necessarily form a valid Rect.
 func TransformRect(r Rect, m Matrix) (Point, Point, Point, Point) {
 	LL := Point{X: r.LLX, Y: r.LLY}
 	UL := Point{X: r.LLX, Y: r.URY}

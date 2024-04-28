@@ -1,5 +1,6 @@
 package svg
 
+
 type lexer struct {
 	src []byte
 	n   int
@@ -39,8 +40,18 @@ func (l *lexer) next() (byte, bool) {
 	return c, ok
 }
 
-func (l *lexer) last() (byte, bool) {
+func (l *lexer) again() (byte, bool) {
 	i := l.n - 1
+	ok := (i >= 0) && (i < len(l.src))
+	var c byte
+	if ok {
+		c = l.src[i]
+	}
+	return c, ok
+}
+
+func (l *lexer) last() (byte, bool) {
+	i := l.n - 2
 	ok := (i >= 0) && (i < len(l.src))
 	var c byte
 	if ok {
