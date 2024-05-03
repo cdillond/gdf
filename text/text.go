@@ -75,7 +75,7 @@ func ExtentKernsFU(c *gdf.ContentStream, t []rune, kerns []int) (float64, error)
 // ExtentKernsPts returns the extent in points of t, when set in c's current font at the current font size.
 // The returned value accounts for kerning, word spacing, and horizontal scaling.
 func ExtentKernsPts(c *gdf.ContentStream, t []rune, kerns []int) (float64, error) {
-	fu, err := c.ExtentKernsFU(t, kerns)
+	fu, err := ExtentKernsFU(c, t, kerns)
 	if err != nil {
 		return *new(float64), err
 	}
@@ -113,7 +113,7 @@ func ExtentFontPts(c *gdf.ContentStream, t []rune, f *gdf.Font, size float64) fl
 // CenterH returns the x offset, in points, from the start of rect, needed to center t horizontally, if drawn with c's current
 // font at c's current font size.
 func CenterH(c *gdf.ContentStream, t []rune, rect gdf.Rect) float64 {
-	ext := c.ExtentPts(t)
+	ext := ExtentPts(c, t)
 	dif := rect.URX - rect.LLX - ext
 	return dif / 2
 }

@@ -34,7 +34,6 @@ func (c *ContentStream) TextOffset(x, y float64) {
 	c.TextObj.Matrix = Mul(c.TextObj.Matrix, Matrix{1, 0, 0, 1, x, y})
 	c.LineMatrix = c.TextObj.Matrix
 	c.buf = cmdf(c.buf, op_Td, x, y)
-	//c.buf.Write(cmdf(c.scratch, op_Td, x, y))
 }
 
 // TextOffsetLeading sets the content stream's current leading to y and then calls c.TextOffset(x, y).
@@ -43,7 +42,6 @@ func (c *ContentStream) TextOffsetLeading(x, y float64) {
 	c.TextObj.Matrix = Mul(c.TextObj.Matrix, Matrix{1, 0, 0, 1, x, y})
 	c.LineMatrix = c.TextObj.Matrix
 	c.buf = cmdf(c.buf, op_Td, x, y)
-	//c.buf.Write(cmdf(c.scratch, op_Td, x, y))
 }
 
 // NextLine begins a new text line by setting the current text matrix and line matrix equal to the line matrix offset by (0, -c.Leading); T*.
@@ -51,12 +49,11 @@ func (c *ContentStream) NextLine() {
 	c.TextObj.Matrix = Mul(c.LineMatrix, Matrix{1, 0, 0, 1, 0, -c.Leading})
 	c.LineMatrix = c.TextObj.Matrix
 	c.buf = append(c.buf, op_T_X...)
-	//c.buf.Write(op_T_X)
 }
 
 // ShowString writes s (without kerning) to c and advances the text matrix by the extent of s; Tj.
 func (c *ContentStream) ShowString(s string) {
-	ext := c.RawExtentPts([]rune(s))
+	ext := c.rawExtentPts([]rune(s))
 	b, _ := c.Font.enc.Bytes([]byte(s))
 	c.TextObj.Matrix = Mul(c.TextObj.Matrix, Matrix{1, 0, 0, 1, ext, 0})
 	c.buf = append(c.buf, '<')
@@ -67,7 +64,7 @@ func (c *ContentStream) ShowString(s string) {
 
 // LineString writes s (without kerning) to c and advances the text matrix by the extent of s; '.
 func (c *ContentStream) LineString(s string) {
-	ext := c.RawExtentPts([]rune(s))
+	ext := c.rawExtentPts([]rune(s))
 	b, _ := c.Font.enc.Bytes([]byte(s))
 	c.TextObj.Matrix = Mul(c.TextObj.Matrix, Matrix{1, 0, 0, 1, ext, -c.Leading})
 	c.buf = append(c.buf, '<')
@@ -98,7 +95,7 @@ func (c *ContentStream) ShowText(t []rune, kerns []int) error {
 	}
 	c.buf = append(c.buf, []byte("] TJ\n")...)
 
-	ext, err := c.ExtentKernsPts(t, kerns)
+	ext, err := c.extentKernsPts(t, kerns)
 	if err != nil {
 		return err
 	}

@@ -1,10 +1,15 @@
 package gdf
 
+/*
+	The functions contained here are largely duplicates of those in gdf/text/text.go. I am in the process of moving them there,
+	to try to clean up the structure of the project from a user's perspective, but some are still needed here due to issues with import cycles.
+*/
+
 import "fmt"
 
-// ExtentFU returns the extent in font units of t, when set in c's current font. The returned value
+// extentFU returns the extent in font units of t, when set in c's current font. The returned value
 // accounts for kerning, word spacing, and horizontal scaling.
-func (c *ContentStream) ExtentFU(t []rune) float64 {
+func (c *ContentStream) extentFU(t []rune) float64 {
 	var ext float64
 	var spaceCount float64
 	var i int
@@ -23,15 +28,15 @@ func (c *ContentStream) ExtentFU(t []rune) float64 {
 	return ext * c.HScale / 100
 }
 
-// ExtentPts returns the extent in points of t, when set in c's current font at the current font size.
+// extentPts returns the extent in points of t, when set in c's current font at the current font size.
 // The returned value accounts for kerning, word spacing, and horizontal scaling.
-func (c *ContentStream) ExtentPts(t []rune) float64 {
-	return FUToPt(c.ExtentFU(t), c.FontSize)
+func (c *ContentStream) extentPts(t []rune) float64 {
+	return FUToPt(c.extentFU(t), c.FontSize)
 }
 
-// RawExtentFU returns the extent in font units of t, when set in c's current font. The returned value
+// rawExtentFU returns the extent in font units of t, when set in c's current font. The returned value
 // accounts for word spacing and horizontal scaling, but does not account for kerning.
-func (c *ContentStream) RawExtentFU(t []rune) float64 {
+func (c *ContentStream) rawExtentFU(t []rune) float64 {
 	var ext float64
 	var spaceCount float64
 	for i := 0; i < len(t); i++ {
@@ -44,15 +49,15 @@ func (c *ContentStream) RawExtentFU(t []rune) float64 {
 	return ext * c.HScale / 100
 }
 
-// RawExtentPts returns the extent in points of t, when set in c's current font at the current font size.
+// rawExtentPts returns the extent in points of t, when set in c's current font at the current font size.
 // The returned value accounts for word spacing and horizontal scaling, but does not account for kerning.
-func (c *ContentStream) RawExtentPts(t []rune) float64 {
-	return FUToPt(c.RawExtentFU(t), c.FontSize)
+func (c *ContentStream) rawExtentPts(t []rune) float64 {
+	return FUToPt(c.rawExtentFU(t), c.FontSize)
 }
 
-// ExtentKernsFU returns the extent in font units of t, when set in c's current font. The returned value
+// extentKernsFU returns the extent in font units of t, when set in c's current font. The returned value
 // accounts for kerning, word spacing, and horizontal scaling.
-func (c *ContentStream) ExtentKernsFU(t []rune, kerns []int) (float64, error) {
+func (c *ContentStream) extentKernsFU(t []rune, kerns []int) (float64, error) {
 	if len(t) != len(kerns) {
 		return 0, fmt.Errorf("equal number of runes and kerns required. rune count: %d, kern count: %d", len(t), len(kerns))
 	}
@@ -68,16 +73,17 @@ func (c *ContentStream) ExtentKernsFU(t []rune, kerns []int) (float64, error) {
 	return ext * c.HScale / 100, nil
 }
 
-// ExtentKernsPts returns the extent in points of t, when set in c's current font at the current font size.
+// extentKernsPts returns the extent in points of t, when set in c's current font at the current font size.
 // The returned value accounts for kerning, word spacing, and horizontal scaling.
-func (c *ContentStream) ExtentKernsPts(t []rune, kerns []int) (float64, error) {
-	fu, err := c.ExtentKernsFU(t, kerns)
+func (c *ContentStream) extentKernsPts(t []rune, kerns []int) (float64, error) {
+	fu, err := c.extentKernsFU(t, kerns)
 	if err != nil {
 		return *new(float64), err
 	}
 	return FUToPt(fu, c.FontSize), nil
 }
 
+/*
 // ExtentFontFU returns the extent in font units of t, when set in font f. The returned value
 // accounts for kerning, word spacing, and horizontal scaling.
 func (c *ContentStream) ExtentFontFU(t []rune, f *Font) float64 {
@@ -99,13 +105,15 @@ func (c *ContentStream) ExtentFontFU(t []rune, f *Font) float64 {
 	return ext * c.HScale / 100
 
 }
-
+*/
+/*
 // ExtentFontPts returns the extent in points of text, when set in font f at the given size. The returned value
 // accounts for kerning, word spacing, and horizontal scaling.
 func (c *ContentStream) ExtentFontPts(t []rune, f *Font, size float64) float64 {
 	return FUToPt(c.ExtentFontFU(t, f), size)
 }
-
+*/
+/*
 // CenterH returns the x offset, in points, from the start of rect, needed to center t horizontally, if drawn with c's current
 // font at c's current font size.
 func (c *ContentStream) CenterH(t []rune, rect Rect) float64 {
@@ -119,3 +127,4 @@ func (c *ContentStream) CenterH(t []rune, rect Rect) float64 {
 func CenterV(height float64, rect Rect) float64 {
 	return -(rect.URY - rect.LLY - height) / 2
 }
+*/
