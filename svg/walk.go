@@ -135,7 +135,7 @@ func walk(n *node, x *gdf.XContent, hScale, wScale float64, defs map[string]*nod
 			c.args[i].Y = hScale*x.BBox.URY - c.args[i].Y
 			c.args[i].X *= wScale
 		}
-		WriteCmd(&x.ContentStream, c)
+		writeCmd(&x.ContentStream, c)
 	}
 
 	if len(cmds) > 0 {

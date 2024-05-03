@@ -10,8 +10,15 @@ import (
 )
 
 var (
-	errTolerance = fmt.Errorf("unable to break lines using current tolerances")
-	errWordSize  = fmt.Errorf("source text contains an unbreakable word that is longer than the maximum line length")
+	// errors returned by NewController
+	ErrTolerance = fmt.Errorf("unable to break lines using current tolerances")
+	ErrWordSize  = fmt.Errorf("source text contains an unbreakable word that is longer than the maximum line length")
+
+	// errors returned by DrawText
+	ErrWidth   = fmt.Errorf("target area must be at least as wide as the max line width")
+	ErrEmpty   = fmt.Errorf("src text buffer is empty")
+	ErrLeading = fmt.Errorf("font leading must be greater than 0")
+	ErrHeight  = fmt.Errorf("target area must be at least as tall as the font leading")
 )
 
 // A Controller is a struct that aids in writing text to a ContentStream. The Controller can break text into lines and paragraphs,
@@ -39,7 +46,7 @@ type Controller struct {
 	ln             int // line index
 }
 
-// A ControllerCfg specifies options for the formatting of text drawn by a TextController.
+// A ControllerCfg specifies options for the formatting of text drawn by a Controller.
 type ControllerCfg struct {
 	Alignment
 	Justification
@@ -106,8 +113,9 @@ to the formatting directives contained in FormatText:
 */
 type FormatText []rune
 
-// NewController returns a TextController that is ready to write src to ContentStreams. It returns an invalid TextController
-// and an error if it encounters a problem while parsing and shaping src.
+// NewController returns a Controller that is ready to write src to ContentStreams. It returns an invalid Controller
+// and an error if it encounters a problem while parsing and shaping src. lineWidth should be the maximum desired
+// width, in points, of each line of the output text when drawn to a gdf.ContentStream.
 func NewController(src FormatText, lineWidth float64, f FontFamily, cfg ControllerCfg) (Controller, error) {
 	tc := Controller{
 		src:       src,
@@ -155,7 +163,7 @@ func NewController(src FormatText, lineWidth float64, f FontFamily, cfg Controll
 	// keep trying until it's clear there's no acceptable solution
 	if err != nil {
 
-		for squish, stretch := tc.tightness*1.25, tc.looseness*2; squish < 1 && errors.Is(err, errTolerance); {
+		for squish, stretch := tc.tightness*1.25, tc.looseness*2; squish < 1 && errors.Is(err, ErrTolerance); {
 			breakpoints, lineWidths, adjs, err = tc.breakLines(squish, stretch)
 			squish *= 1.25
 			stretch *= 2
@@ -171,19 +179,24 @@ func NewController(src FormatText, lineWidth float64, f FontFamily, cfg Controll
 	return tc, nil
 }
 
+// DrawText draws the text from the Controller to the area of c specified by area. The return gdf.Point is
+// the position of c's TextCursor after the text has been drawn. (This value would not be otherwise accessible because
+// each call to DrawText encompasses a c.BeginText/EndText pair.) The returned bool indicates whether the Controller's
+// buffer still contains additional source text. If this value is true, then future calls to DrawText can be used to
+// draw the remaining source text - usually to different areas or ContentStreams.
 func (tc *Controller) DrawText(c *gdf.ContentStream, area gdf.Rect) (gdf.Point, bool, error) {
 	if gdf.PtToFU(area.Width(), tc.fontSize) < tc.lineWidth {
-		return *new(gdf.Point), false, fmt.Errorf("target area must be at least as wide as the max line width")
+		return *new(gdf.Point), false, ErrWidth
 	}
 	if tc.n >= len(tc.tokens) {
-		return *new(gdf.Point), false, fmt.Errorf("src text buffer is empty")
+		return *new(gdf.Point), false, ErrEmpty
 	}
 	if tc.leading <= 0 {
-		return *new(gdf.Point), false, fmt.Errorf("font leading must be greater than 0")
+		return *new(gdf.Point), false, ErrLeading
 	}
 	maxLines := area.Height() / tc.leading
 	if maxLines < 1 {
-		return *new(gdf.Point), false, fmt.Errorf("target area must be at least as tall as the font leading")
+		return *new(gdf.Point), false, ErrHeight
 	}
 	if c.Leading != tc.leading {
 		c.SetLeading(tc.leading)
@@ -452,7 +465,7 @@ func (tc *Controller) breakLines(squishTolerance, stretchTolerance float64) ([]i
 			curWidth += v.Width()
 			runWidth += v.Width()
 			if runWidth > tc.lineWidth {
-				return nil, nil, nil, fmt.Errorf("%w: %s", errWordSize, string(v.chars))
+				return nil, nil, nil, fmt.Errorf("%w: %s", ErrWordSize, string(v.chars))
 			}
 		case skip:
 			runWidth = 0
@@ -507,7 +520,7 @@ func (tc *Controller) breakLines(squishTolerance, stretchTolerance float64) ([]i
 			}
 			// unable to proceed
 			if lineStart == len(activeNodes) {
-				return nil, nil, nil, fmt.Errorf("%w, squish: %f stretch: %f", errTolerance, squishTolerance, stretchTolerance)
+				return nil, nil, nil, fmt.Errorf("%w, squish: %f stretch: %f", ErrTolerance, squishTolerance, stretchTolerance)
 			}
 		case fWeight:
 			switch v {
@@ -526,7 +539,7 @@ func (tc *Controller) breakLines(squishTolerance, stretchTolerance float64) ([]i
 			runWidth = 0
 			// this should already have been caught, but it might help to do a bounds check just to be safe
 			if len(activeNodes) == 0 {
-				return nil, nil, nil, fmt.Errorf("%w, squish: %f stretch: %f", errTolerance, squishTolerance, stretchTolerance)
+				return nil, nil, nil, fmt.Errorf("%w, squish: %f stretch: %f", ErrTolerance, squishTolerance, stretchTolerance)
 			}
 			// the remaining active node should be the one with the optimal endpoint
 			endNode := activeNodes[len(activeNodes)-1]

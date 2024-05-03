@@ -2,7 +2,6 @@ package gdf
 
 import (
 	"io"
-	"log"
 
 	"github.com/cdillond/gdf/ttf"
 )
@@ -22,17 +21,22 @@ func NewPDF() *PDF {
 	return pdf
 }
 
-func buildPDFTree(pdf *PDF) {
-	includeObj(pdf, obj((&pdf.catalog)))
-	includeChildren(pdf, obj(&(pdf.catalog)))
-	if pdf.info != nil {
-		includeObj(pdf, obj(pdf.info))
+func buildPDFTree(pdf *PDF) error {
+	includeObj(pdf, &pdf.catalog)
+	if err := includeChildren(pdf, &pdf.catalog); err != nil {
+		return err
 	}
+	if pdf.info != nil {
+		includeObj(pdf, pdf.info)
+	}
+	return nil
 }
 
-// Builds the PDF and writes it to w. Attempting to write an empty PDF, i.e., one without any content streams, causes a panic.
+// Builds the PDF and writes it to w.
 func (p *PDF) WriteTo(w io.Writer) (int64, error) {
-	buildPDFTree(p)
+	if err := buildPDFTree(p); err != nil {
+		return 0, err
+	}
 	if err := writeHeader(p, w); err != nil {
 		return int64(p.n), err
 	}
@@ -55,7 +59,7 @@ func includeObj(pdf *PDF, o obj) {
 	}
 }
 
-func includeChildren(pdf *PDF, o obj) {
+func includeChildren(pdf *PDF, o obj) error {
 	for _, child := range o.children() {
 		// finalize fonts
 		if fnt, ok := child.(*Font); ok {
@@ -68,14 +72,16 @@ func includeChildren(pdf *PDF, o obj) {
 				}
 				b, err := ttf.Subset(fnt.SFNT, fnt.srcb, tmp)
 				if err != nil {
-					log.Println(err.Error())
+					return err // log.Println(err.Error())
 				} else {
-					//fnt.source.buf.Write(b)
 					fnt.source.buf = b
 				}
 			}
 		}
 		includeObj(pdf, child)
-		includeChildren(pdf, child)
+		if err := includeChildren(pdf, child); err != nil {
+			return err
+		}
 	}
+	return nil
 }

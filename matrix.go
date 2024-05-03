@@ -90,12 +90,12 @@ func Transform(p Point, m Matrix) Point {
 }
 
 // TransformRect returns the coordinates of the vertices of r transformed by m in the order LL, UL, LR, UR. The returned points do not necessarily form a valid Rect.
-func TransformRect(r Rect, m Matrix) (Point, Point, Point, Point) {
-	LL := Point{X: r.LLX, Y: r.LLY}
-	UL := Point{X: r.LLX, Y: r.URY}
-	LR := Point{X: r.URX, Y: r.LLY}
-	UR := Point{X: r.URX, Y: r.URY}
-	return Transform(LL, m), Transform(UL, m), Transform(LR, m), Transform(UR, m)
+func TransformRect(r Rect, m Matrix) (LL Point, UL Point, LR Point, UR Point) {
+	LL = Transform(Point{X: r.LLX, Y: r.LLY}, m)
+	UL = Transform(Point{X: r.LLX, Y: r.URY}, m)
+	LR = Transform(Point{X: r.URX, Y: r.LLY}, m)
+	UR = Transform(Point{X: r.URX, Y: r.URY}, m)
+	return LL, UL, LR, UR
 }
 
 // Mul returns the matrix product of m1 and m2. Note: this operation is not commutative.

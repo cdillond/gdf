@@ -1,9 +1,7 @@
 package gdf
 
 import (
-	"errors"
 	"math"
-	"os"
 )
 
 // A FillRule represents an algorithm for determining whether a particular point is interior to a path. See ISO 32000-2:2020 sections
@@ -75,26 +73,6 @@ func (c *ContentStream) CubicBezier3(x1, y1, x3, y3 float64) {
 		c.CurPt = Point{x3, y3}
 		c.buf = cmdf(c.buf, op_y, x1, y1, x3, y3)
 	}
-}
-
-func join(e1, e2 error) error {
-	if e1 == nil {
-		return e2
-	}
-	return errors.Join(e1, e2)
-}
-
-func Q() (err error) {
-	f, err := os.Open("hm..")
-	if err != nil {
-		return err
-	}
-
-	defer func() {
-		err = join(err, f.Close())
-	}()
-
-	return err
 }
 
 // Circle begins a new path and appends a circle of radius r with a center point of (x, y) to the path.

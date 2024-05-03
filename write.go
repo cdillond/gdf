@@ -95,10 +95,11 @@ func writeTrailer(p *PDF, w io.Writer) error {
 
 	// Overwrite the 0 bytes.
 	i := bytes.IndexByte(buf, 0)
+	var n int
 	if i > -1 {
-		copy(buf[i:], idx)
+		n = copy(buf[i:], idx)
 	}
-	i = bytes.IndexByte(buf, 0)
+	i = bytes.IndexByte(buf[i+n:], 0)
 	if i > -1 {
 		copy(buf[i:], idx)
 	}

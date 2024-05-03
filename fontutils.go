@@ -51,21 +51,22 @@ func (f *Font) GlyphAdvance(r rune) int {
 }
 
 // ShapedGlyphAdv returns the advance and kerning of r1 when set before r2.
-func (f *Font) ShapedGlyphAdv(r1, r2 rune) (int, int) {
-	adv := f.GlyphAdvance(r1)
+func (f *Font) ShapedGlyphAdv(r1, r2 rune) (adv int, kern int) {
+	adv = f.GlyphAdvance(r1)
 	gid1, err := f.SFNT.GlyphIndex(f.buf, r1)
 	if err != nil {
-		return adv, 0
+		return 0, 0
 	}
 	gid2, err := f.SFNT.GlyphIndex(f.buf, r2)
 	if err != nil {
-		return adv, 0
+		return 0, 0
 	}
-	kern, err := f.SFNT.Kern(f.buf, gid1, gid2, 1000, 0)
+	fpKern, err := f.SFNT.Kern(f.buf, gid1, gid2, 1000, 0)
 	if err != nil {
-		return adv, 0
+		return 0, 0
 	}
-	return adv, int(kern)
+	kern = int(fpKern)
+	return adv, kern
 }
 
 func fontBBox(font *sfnt.Font, buf *sfnt.Buffer) (fixed.Rectangle26_6, error) {
@@ -81,7 +82,7 @@ func fontBBox(font *sfnt.Font, buf *sfnt.Buffer) (fixed.Rectangle26_6, error) {
 }
 
 // AscDesc returns the ascent and descent, in font units, of the glyph corresponding to the given rune.
-func (f *Font) AscDesc(r rune) (float64, float64) {
+func (f *Font) AscDesc(r rune) (asc float64, desc float64) {
 	gid, err := f.SFNT.GlyphIndex(f.buf, r)
 	if err != nil {
 		return 0, 0
@@ -93,16 +94,15 @@ func (f *Font) AscDesc(r rune) (float64, float64) {
 }
 
 // TextAscDesc returns the maximum ascent and descent, in font units, of the glyphs in the given text.
-func (f *Font) TextAscDesc(text []rune) (float64, float64) {
-	var maxA, maxD float64
+func (f *Font) TextAscDesc(text []rune) (asc float64, desc float64) {
 	for i := range text {
-		asc, desc := f.AscDesc(text[i])
-		if asc > maxA {
-			maxA = asc
+		a, d := f.AscDesc(text[i])
+		if a > asc {
+			asc = a
 		}
-		if desc > maxD {
-			maxD = desc
+		if d > desc {
+			desc = d
 		}
 	}
-	return maxA, maxD
+	return asc, desc
 }

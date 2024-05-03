@@ -20,7 +20,7 @@ func DecodeFile(path string) (gdf.XImage, error) {
 }
 
 // Decode interprets b as data representing a PNG image. It decodes the image and returns
-// a *gdf.XImage and an error. This function may not be ideal for all varieties of PNG.
+// a gdf.XImage and an error. This function may not be ideal for all varieties of PNG.
 // In particular, grayscale images with alpha channels are converted to their NRGBA equivalents,
 // which may have the effect of significantly increasing the image's encoding size. Applications
 // sensitive to performance may benefit from processing the image data separately and then

@@ -2,7 +2,7 @@ package svg
 
 import "github.com/cdillond/gdf"
 
-func WriteCmd(c *gdf.ContentStream, cmd pdfPathCmd) {
+func writeCmd(c *gdf.ContentStream, cmd pdfPathCmd) {
 	switch cmd.op {
 	case moveTo:
 		c.MoveTo(cmd.args[0].X, cmd.args[0].Y)
