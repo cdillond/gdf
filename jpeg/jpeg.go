@@ -13,7 +13,10 @@ import (
 // Decode interprets b as data representing a JPEG image, as specified by ISO/IEC 10918. It
 // returns a gdf.XImage and an error.
 func Decode(b []byte) (gdf.XImage, error) {
-	cfg, err := std.DecodeConfig(bytes.NewReader(b))
+	// We can get away with not copying b, since bytes.Reader leaves b unaltered, but the io.Reader
+	// interface explicitly states that b may be used as a scratch space by certain implementations.
+	r := bytes.NewReader(b)
+	cfg, err := std.DecodeConfig(r)
 	if err != nil {
 		return *new(gdf.XImage), err
 	}
@@ -28,9 +31,11 @@ func Decode(b []byte) (gdf.XImage, error) {
 	case color.YCbCrModel, color.RGBAModel:
 		x.ColorSpace = gdf.DeviceRGB
 	default:
+		r.Reset(b)
 		// CMYK and Gray color models should be re-encoded to avoid errors.
-		return slowPath(b, x)
+		return slowPath(r, x)
 	}
+
 	x.Data = b
 	return x, nil
 }
@@ -62,8 +67,8 @@ func imageToXImg(img image.Image, x gdf.XImage) (gdf.XImage, error) {
 	return x, nil
 }
 
-func slowPath(b []byte, x gdf.XImage) (gdf.XImage, error) {
-	img, err := std.Decode(bytes.NewReader(b))
+func slowPath(r *bytes.Reader, x gdf.XImage) (gdf.XImage, error) {
+	img, err := std.Decode(r)
 	if err != nil {
 		return *new(gdf.XImage), err
 	}

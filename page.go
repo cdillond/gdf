@@ -6,7 +6,7 @@ import (
 )
 
 type Page struct {
-	C        *ContentStream
+	c        *ContentStream
 	MediaBox Rect
 	CropBox  Rect // "the rectangle of user space corresponding to the visible area of the intended output medium (display window or printed page)"
 	Margins
@@ -14,11 +14,19 @@ type Page struct {
 	parent *pages
 }
 
+// ContentStream returns a pointer to p's ContentStream.
+func (p Page) ContentStream() *ContentStream {
+	if p.c == nil {
+		p.c = p.newContentStream()
+	}
+	return p.c
+}
+
 // A resourceDict holds references to resources used by the content stream. When the PDF is built, this is promoted to part of the Page object dictionary.
 // It is easier to group the resourceDict with the ContentStream, since doing so allows for Form XObjects to include resources of their own.
 type resourceDict struct {
 	Fonts []*Font
-	//XObjs     []*XObject
+
 	ExtGState []*extGS
 	Images    []*Image
 	XForms    []*XContent
@@ -54,16 +62,6 @@ func (r resourceDict) bytes() []byte {
 			"/Font", subdict(128, ffields),
 		})
 	}
-	// XObjs Subdict
-	/*if len(r.XObjs) > 0 {
-		xfields := make([]field, len(r.XObjs))
-		for i := range r.XObjs {
-			xfields[i] = field{"/P" + itoa(i), iref(r.XObjs[i])}
-		}
-		fields = append(fields, field{
-			"/XObject", subdict(128, xfields),
-		})
-	} */
 
 	if len(r.XForms) > 0 || len(r.Images) > 0 {
 		xfields := make([]field, 0, len(r.XForms)+len(r.Images))
@@ -94,7 +92,7 @@ func (r resourceDict) bytes() []byte {
 // NewPage returns a new Page object with the specified size and margins.
 func NewPage(pageSize Rect, margins Margins) Page {
 	p := Page{MediaBox: pageSize, CropBox: pageSize, Margins: margins}
-	p.C = p.newContentStream()
+	p.c = p.newContentStream()
 	return p
 }
 
@@ -133,40 +131,43 @@ func (p *PDF) ReplacePage(page *Page, i int) error {
 func (p *Page) mark(i int) { p.refnum = i }
 func (p *Page) id() int    { return p.refnum }
 func (p *Page) children() []obj {
-	out := make([]obj, 0, len(p.C.resources.Fonts)+len(p.C.resources.XForms)+len(p.C.resources.Images)+len(p.C.resources.ExtGState)+1+(len(p.C.resources.Widgets)))
-	for i := range p.C.resources.Fonts {
-		out = append(out, p.C.resources.Fonts[i])
+	if p.c == nil {
+		p.c = p.newContentStream()
+	}
+	out := make([]obj, 0, len(p.c.resources.Fonts)+len(p.c.resources.XForms)+len(p.c.resources.Images)+len(p.c.resources.ExtGState)+1+(len(p.c.resources.Widgets)))
+	for i := range p.c.resources.Fonts {
+		out = append(out, p.c.resources.Fonts[i])
 	}
 	//for i := range p.C.resources.XObjs {
 	//	out = append(out, p.C.resources.XObjs[i])
 	//}
-	for i := range p.C.resources.XForms {
-		out = append(out, p.C.resources.XForms[i])
+	for i := range p.c.resources.XForms {
+		out = append(out, p.c.resources.XForms[i])
 	}
-	for i := range p.C.resources.Images {
-		out = append(out, p.C.resources.Images[i])
+	for i := range p.c.resources.Images {
+		out = append(out, p.c.resources.Images[i])
 	}
-	for i := range p.C.resources.ExtGState {
-		out = append(out, p.C.resources.ExtGState[i])
+	for i := range p.c.resources.ExtGState {
+		out = append(out, p.c.resources.ExtGState[i])
 	}
-	for i := range p.C.resources.TextAnnots {
-		out = append(out, p.C.resources.TextAnnots[i])
+	for i := range p.c.resources.TextAnnots {
+		out = append(out, p.c.resources.TextAnnots[i])
 	}
-	for i := range p.C.resources.Widgets {
-		out = append(out, p.C.resources.Widgets[i])
+	for i := range p.c.resources.Widgets {
+		out = append(out, p.c.resources.Widgets[i])
 	}
-	return append(out, p.C)
+	return append(out, p.c)
 }
 
 func (p *Page) encode(w io.Writer) (int, error) {
 	var fields []field
 
-	if len(p.C.resources.Widgets) > 0 {
-		a := make([]string, 0, len(p.C.resources.Widgets)+len(p.C.resources.TextAnnots))
-		for _, an := range p.C.resources.TextAnnots {
+	if len(p.c.resources.Widgets) > 0 {
+		a := make([]string, 0, len(p.c.resources.Widgets)+len(p.c.resources.TextAnnots))
+		for _, an := range p.c.resources.TextAnnots {
 			a = append(a, iref(an))
 		}
-		for _, an := range p.C.resources.Widgets {
+		for _, an := range p.c.resources.Widgets {
 			a = append(a, iref(an))
 		}
 		fields = append(fields, field{
@@ -179,8 +180,8 @@ func (p *Page) encode(w io.Writer) (int, error) {
 		{"/Parent", iref(p.parent)},
 		{"/MediaBox", p.MediaBox},
 		{"/CropBox", p.CropBox},
-		{"/Contents", iref(p.C)},
-		{"/Resources", p.C.resources.bytes()},
+		{"/Contents", iref(p.c)},
+		{"/Resources", p.c.resources.bytes()},
 	}, fields...)))
 }
 
@@ -195,5 +196,5 @@ func (p *Page) newContentStream() *ContentStream {
 // Annotate draws the TextAnnot t to the area of p described by r.
 func (p *Page) Annotate(t *TextAnnot, r Rect) {
 	t.rect = r
-	p.C.resources.TextAnnots = append(p.C.resources.TextAnnots, t)
+	p.c.resources.TextAnnots = append(p.c.resources.TextAnnots, t)
 }

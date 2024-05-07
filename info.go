@@ -26,7 +26,7 @@ type InfoDict struct {
 	Producer     string
 	CreationDate time.Time
 	ModDate      time.Time
-	//Trapped      string
+
 	refnum int
 }
 

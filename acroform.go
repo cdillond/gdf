@@ -197,10 +197,10 @@ func (p *Page) AddAcroField(w *Widget, f *AcroField, dst Rect, strokeBorder bool
 	w.rect = dst
 	w.page = p
 	w.acrofield = f
-	p.C.resources.Widgets = append(p.C.resources.Widgets, w)
+	p.c.resources.Widgets = append(p.c.resources.Widgets, w)
 	if strokeBorder {
-		p.C.Re2(dst)
-		p.C.Stroke()
+		p.c.Re2(dst)
+		p.c.Stroke()
 	}
 	return nil
 }

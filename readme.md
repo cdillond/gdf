@@ -24,7 +24,7 @@ Transformation matrices are defined by 6 parameters representing the translation
 ```go
     pdf := gdf.NewPDF() // create a new PDF instance
     page := gdf.NewPage(gdf.A4, gdf.NoMargins) // start a new page
-    cs := page.C // content is drawn to a page's content stream
+    cs := page.ContentStream() // content is drawn to a page's content stream
     cs.Concat(gdf.ScaleBy(1, 2)) // concatenate an affine matrix representing a 2*y scaling to the Current Transformation Matrix (by default the identity matrix)
     cs.MoveTo(10, 5) // start a new path at (10, 5); this will be (10, 10) on the page
     cs.LineTo(250, 125) // create a line to (250, 125), which will be (250, 250) on the page
@@ -39,7 +39,7 @@ Transformation matrices are defined by 6 parameters representing the translation
 
 ```
 ## Units
-The default basic unit for a PDF document is the point, defined as 1/72 of an inch. However, text can be measured in terms of both points and unscaled font units. The font size (in points) indicates the number of points per side of a glyph's em square. PDF fonts always contain 1000 font units per em square, so a conversion from font units to points can be obtained by calculating `fontSize*numFontUnits/1000`. The `CharSpace` and `WordSpace` elements of a `PDF`'s `TextState` are defined in font units.
+The default basic unit for a PDF document is the point, defined as 1/72 of an inch. However, text can be measured in terms of both points and unscaled font units. The font size (in points) indicates the number of points per side of a glyph's em square. PDF fonts always contain 1000 font units per em square, so a conversion from font units to points can be obtained by calculating `fontSize*numFontUnits/1000`, or by using the `FUToPt` or `PtToFU` functions. The `CharSpace` and `WordSpace` elements of a `ContentStream`'s `TextState` are defined in font units.
 
 ## Raster Images
 In general, raster images displayed within a PDF document can be thought of as having two parts: a header, containing information about the image's size and encoding characteristics, and a byte slice representing the image's RGB/Gray/CMYK pixels in scanline order. (Alpha channel values must be encoded in a separate grayscale image.) Lossless compression filters can be applied to the byte slice to reduce its size, but this is can be costly. Where possible, it is best to store images as pre-compressed XImage objects. As a notable exception, most JPEG images can be embedded in a PDF without the need to decode and re-encode them.
