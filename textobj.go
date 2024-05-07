@@ -25,19 +25,18 @@ func (c *ContentStream) TextCursor() Point {
 func (c *ContentStream) SetTextMatrix(m Matrix) {
 	c.TextObj.Matrix = m
 	c.TextObj.LineMatrix = m
-	//c.buf.Write(cmdf(c.scratch, op_Tm, m.A, m.B, m.C, m.D, m.E, m.F))
 	c.buf = cmdf(c.buf, op_Tm, m.A, m.B, m.C, m.D, m.E, m.F)
 }
 
-// TextOffset offsets the current text object's text matrix by x and y, and sets the text object's line matrix equal to its text matrix.
-func (c *ContentStream) TextOffset(x, y float64) {
+// SetTextOffset offsets the current text object's text matrix by x and y, and sets the text object's line matrix equal to its text matrix.
+func (c *ContentStream) SetTextOffset(x, y float64) {
 	c.TextObj.Matrix = Mul(c.TextObj.Matrix, Matrix{1, 0, 0, 1, x, y})
 	c.LineMatrix = c.TextObj.Matrix
 	c.buf = cmdf(c.buf, op_Td, x, y)
 }
 
-// TextOffsetLeading sets the content stream's current leading to y and then calls c.TextOffset(x, y).
-func (c *ContentStream) TextOffsetLeading(x, y float64) {
+// SetTextOffsetLeading sets the content stream's current leading to y and then calls c.TextOffset(x, y).
+func (c *ContentStream) SetTextOffsetLeading(x, y float64) {
 	c.SetLeading(-y)
 	c.TextObj.Matrix = Mul(c.TextObj.Matrix, Matrix{1, 0, 0, 1, x, y})
 	c.LineMatrix = c.TextObj.Matrix
@@ -53,7 +52,7 @@ func (c *ContentStream) NextLine() {
 
 // ShowString writes s (without kerning) to c and advances the text matrix by the extent of s; Tj.
 func (c *ContentStream) ShowString(s string) {
-	ext := c.rawExtentPts([]rune(s))
+	ext := FUToPt(c.RawExtent([]rune(s)), c.FontSize)
 	b, _ := c.Font.enc.Bytes([]byte(s))
 	c.TextObj.Matrix = Mul(c.TextObj.Matrix, Matrix{1, 0, 0, 1, ext, 0})
 	c.buf = append(c.buf, '<')
@@ -64,7 +63,7 @@ func (c *ContentStream) ShowString(s string) {
 
 // LineString writes s (without kerning) to c and advances the text matrix by the extent of s; '.
 func (c *ContentStream) LineString(s string) {
-	ext := c.rawExtentPts([]rune(s))
+	ext := FUToPt(c.RawExtent([]rune(s)), c.FontSize)
 	b, _ := c.Font.enc.Bytes([]byte(s))
 	c.TextObj.Matrix = Mul(c.TextObj.Matrix, Matrix{1, 0, 0, 1, ext, -c.Leading})
 	c.buf = append(c.buf, '<')
@@ -95,10 +94,11 @@ func (c *ContentStream) ShowText(t []rune, kerns []int) error {
 	}
 	c.buf = append(c.buf, []byte("] TJ\n")...)
 
-	ext, err := c.extentKernsPts(t, kerns)
+	ext, err := c.ExtentKerns(t, kerns)
 	if err != nil {
 		return err
 	}
+	ext = FUToPt(ext, c.FontSize)
 	c.TextObj.Matrix = Mul(c.TextObj.Matrix, Matrix{1, 0, 0, 1, ext, 0})
 	return nil
 }

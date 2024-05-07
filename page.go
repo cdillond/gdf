@@ -100,33 +100,33 @@ func NewPage(pageSize Rect, margins Margins) Page {
 
 // Appends page to p.
 func (p *PDF) AppendPage(page *Page) {
-	p.catalog.Pages.P = append(p.catalog.Pages.P, page)
-	page.parent = p.catalog.Pages
+	p.catalog.pages.P = append(p.catalog.pages.P, page)
+	page.parent = p.catalog.pages
 }
 
 // Inserts page at index i of the PDF's internal page structure.
 func (p *PDF) InsertPage(page *Page, i int) error {
-	if i < 0 || i > len(p.catalog.Pages.P) {
+	if i < 0 || i > len(p.catalog.pages.P) {
 		return errors.New("out of bounds")
 	}
-	if i == len(p.catalog.Pages.P) {
-		p.catalog.Pages.P = append(p.catalog.Pages.P, page)
+	if i == len(p.catalog.pages.P) {
+		p.catalog.pages.P = append(p.catalog.pages.P, page)
 		return nil
 	}
-	dst := make([]*Page, len(p.catalog.Pages.P)+1)
-	copy(dst, p.catalog.Pages.P[:i])
+	dst := make([]*Page, len(p.catalog.pages.P)+1)
+	copy(dst, p.catalog.pages.P[:i])
 	dst[i] = page
-	copy(dst[i+1:], p.catalog.Pages.P[i:])
-	p.catalog.Pages.P = dst
+	copy(dst[i+1:], p.catalog.pages.P[i:])
+	p.catalog.pages.P = dst
 	return nil
 }
 
 // ReplacePage replaces the page at index i of the PDF's internal page structure with page.
 func (p *PDF) ReplacePage(page *Page, i int) error {
-	if i < 0 || i >= len(p.catalog.Pages.P) {
+	if i < 0 || i >= len(p.catalog.pages.P) {
 		return errors.New("out of bounds")
 	}
-	p.catalog.Pages.P[i] = page
+	p.catalog.pages.P[i] = page
 	return nil
 }
 

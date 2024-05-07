@@ -9,7 +9,7 @@ import (
 )
 
 func writeHeader(p *PDF, w io.Writer) error {
-	if p.info == nil && len(p.catalog.Acroform.acrofields) == 0 {
+	if p.info == nil && len(p.catalog.acroform.acrofields) == 0 {
 		n, err := w.Write([]byte("%PDF-2.0\n\x81\x81\x81\x81\n"))
 		p.n += n
 		return err

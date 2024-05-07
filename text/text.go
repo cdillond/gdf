@@ -7,7 +7,7 @@ import (
 // CenterH returns the x offset, in points, from the start of rect, needed to center t horizontally, if drawn with c's current
 // font at c's current font size.
 func CenterH(c *gdf.ContentStream, t []rune, rect gdf.Rect) float64 {
-	ext := gdf.FUToPt(c.Extent(t), c.FontSize)
+	ext := gdf.FUToPt(c.Extent(t), gdf.PtToFU(c.FontSize, c.FontSize))
 	dif := rect.URX - rect.LLX - ext
 	return dif / 2
 }

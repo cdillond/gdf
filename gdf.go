@@ -16,8 +16,8 @@ type PDF struct {
 
 func NewPDF() *PDF {
 	pdf := new(PDF)
-	pdf.catalog.Pages = new(pages)
-	pdf.catalog.Acroform = new(acroform)
+	pdf.catalog.pages = new(pages)
+	pdf.catalog.acroform = new(acroform)
 	return pdf
 }
 

@@ -55,18 +55,17 @@ func (f *Font) ShapedGlyphAdv(r1, r2 rune) (adv int, kern int) {
 	adv = f.GlyphAdvance(r1)
 	gid1, err := f.SFNT.GlyphIndex(f.buf, r1)
 	if err != nil {
-		return 0, 0
+		return adv, 0
 	}
 	gid2, err := f.SFNT.GlyphIndex(f.buf, r2)
 	if err != nil {
-		return 0, 0
+		return adv, 0
 	}
 	fpKern, err := f.SFNT.Kern(f.buf, gid1, gid2, 1000, 0)
 	if err != nil {
-		return 0, 0
+		return adv, 0
 	}
-	kern = int(fpKern)
-	return adv, kern
+	return adv, int(fpKern)
 }
 
 func fontBBox(font *sfnt.Font, buf *sfnt.Buffer) (fixed.Rectangle26_6, error) {

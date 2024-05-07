@@ -15,8 +15,8 @@ var (
 	ErrWordSize  = fmt.Errorf("source text contains an unbreakable word that is longer than the maximum line length")
 
 	// errors returned by DrawText
-	ErrWidth   = fmt.Errorf("target area must be at least as wide as the max line width")
-	ErrEmpty   = fmt.Errorf("src text buffer is empty")
+	ErrWidth   = fmt.Errorf("target area must be at least as wide as the maximum line width")
+	ErrEmpty   = fmt.Errorf("source text buffer is empty")
 	ErrLeading = fmt.Errorf("font leading must be greater than 0")
 	ErrHeight  = fmt.Errorf("target area must be at least as tall as the font leading")
 )
@@ -25,14 +25,14 @@ var (
 // determine the appropriate kerning for glyphs in a string, and draw text according to the format specified by the ControllerCfg struct.
 type Controller struct {
 	src            []rune        // source text
-	f              FontFamily    // the set of fonts to be used. On each call to DrawText, the supplied ContentStream's font will be set to one of the fonts from f, according to the TextConroller's font weight state. The fonts need not be of the same actual family - chosen families are valid, too!
+	family         FontFamily    // the set of fonts to be used. On each call to DrawText, the supplied ContentStream's font will be set to one of the fonts from f, according to the TextConroller's font weight state. The fonts need not be of the same actual family - chosen families are valid, too!
 	isBold, isItal bool          // font weight state
 	curFont        *gdf.Font     // Used for calculating line widths, but not for actually writing the text.
 	fontSize       float64       // font size. On each call to DrawText, the supplied ContentStream's FontSize will be set to this value
 	leading        float64       // text leading. On each call to DrawText, the supplied ContentStream's Leading will be set to this value.
 	lineWidth      float64       // ideal line width in Font Units
-	a              Alignment     // paragraph alignment
-	j              Justification // paragraph justification style
+	alignment      Alignment     // paragraph alignment
+	just           Justification // paragraph justification style
 	firstIndent    float64       // indent of the first line of each paragraph
 	tokens         []token       // source text tokens
 	breakpoints    []int         // indices of forced breaks in k.tokens
@@ -41,7 +41,7 @@ type Controller struct {
 	tightness      float64       // the ratio of the minimum allowable space advance and the normal space advance in justified text
 	looseness      float64       // the ratio of the maximum allowable space advance and the normal space advance in justified text
 	scolor, ncolor gdf.Color
-	r              gdf.RenderMode
+	renderMode     gdf.RenderMode
 	n              int // token index
 	ln             int // line index
 }
@@ -50,7 +50,7 @@ type Controller struct {
 type ControllerCfg struct {
 	Alignment
 	Justification
-	gdf.RenderMode
+	RenderMode     gdf.RenderMode
 	FontSize       float64
 	Leading        float64
 	IsIndented     bool
@@ -118,26 +118,26 @@ type FormatText []rune
 // width, in points, of each line of the output text when drawn to a gdf.ContentStream.
 func NewController(src FormatText, lineWidth float64, f FontFamily, cfg ControllerCfg) (Controller, error) {
 	tc := Controller{
-		src:       src,
-		f:         f,
-		lineWidth: gdf.PtToFU(lineWidth, cfg.FontSize),
-		fontSize:  cfg.FontSize,
-		a:         cfg.Alignment,
-		j:         cfg.Justification,
-		tightness: cfg.Tightness,
-		looseness: cfg.Looseness,
-		leading:   cfg.Leading,
-		isBold:    cfg.IsBold,
-		isItal:    cfg.IsItal,
-		scolor:    cfg.SColor,
-		ncolor:    cfg.NColor,
-		r:         cfg.RenderMode,
+		src:        src,
+		family:     f,
+		lineWidth:  gdf.PtToFU(lineWidth, cfg.FontSize),
+		fontSize:   cfg.FontSize,
+		alignment:  cfg.Alignment,
+		just:       cfg.Justification,
+		tightness:  cfg.Tightness,
+		looseness:  cfg.Looseness,
+		leading:    cfg.Leading,
+		isBold:     cfg.IsBold,
+		isItal:     cfg.IsItal,
+		scolor:     cfg.SColor,
+		ncolor:     cfg.NColor,
+		renderMode: cfg.RenderMode,
 	}
-	if tc.j == Ragged {
+	if tc.just == Ragged {
 		tc.tightness = 0
 		tc.looseness = 1
 	}
-	if tc.j == Justified {
+	if tc.just == Justified {
 		// stretch tolerance cannot be 0
 		if tc.looseness == 0 {
 			tc.looseness = .5
@@ -155,14 +155,14 @@ func NewController(src FormatText, lineWidth float64, f FontFamily, cfg Controll
 
 	spaceAdv := f.Regular.GlyphAdvance('\u0020') // use the regular font as the baseline regardless
 	if cfg.IsIndented {
-		tc.firstIndent = 5.0 * float64(spaceAdv)
+		// indent is 4 spaces; subject to change.
+		tc.firstIndent = 4.0 * float64(spaceAdv)
 	}
 
 	tc.tokens = tc.tokenize(tc.src)
 	breakpoints, lineWidths, adjs, err := tc.breakLines(tc.tightness, tc.looseness)
 	// keep trying until it's clear there's no acceptable solution
 	if err != nil {
-
 		for squish, stretch := tc.tightness*1.25, tc.looseness*2; squish < 1 && errors.Is(err, ErrTolerance); {
 			breakpoints, lineWidths, adjs, err = tc.breakLines(squish, stretch)
 			squish *= 1.25
@@ -194,7 +194,7 @@ func (tc *Controller) DrawText(c *gdf.ContentStream, area gdf.Rect) (gdf.Point, 
 	if tc.leading <= 0 {
 		return *new(gdf.Point), false, ErrLeading
 	}
-	maxLines := area.Height() / tc.leading
+	maxLines := int(area.Height()/tc.leading) + tc.ln
 	if maxLines < 1 {
 		return *new(gdf.Point), false, ErrHeight
 	}
@@ -211,20 +211,20 @@ func (tc *Controller) DrawText(c *gdf.ContentStream, area gdf.Rect) (gdf.Point, 
 		c.SetColorStroke(tc.scolor)
 	}
 	et, err := c.BeginText()
-	if c.RenderMode != tc.r {
-		c.SetRenderMode(tc.r)
+	if c.RenderMode != tc.renderMode {
+		c.SetRenderMode(tc.renderMode)
 	}
-	c.TextOffset(area.LLX, area.URY-tc.leading)
+	c.SetTextOffset(area.LLX, area.URY-tc.leading)
 	if err != nil {
 		return *new(gdf.Point), false, err
 	}
-	tc.writeLines(c, min(int(maxLines), len(tc.breakpoints)))
+	tc.writeLines(c, maxLines)
 	endPt := c.RawTextCursor()
 	err = et()
 	if err != nil {
 		return *new(gdf.Point), false, err
 	}
-	return endPt, tc.n == len(tc.tokens), nil
+	return endPt, tc.n == len(tc.tokens)-1, nil
 }
 
 type token interface {
@@ -371,16 +371,16 @@ func (tc *Controller) tokenize(src FormatText) []token {
 			advs = advs[:0]
 			kerns = kerns[:0]
 			if isBold && isItal {
-				curFont = tc.f.Ital
+				curFont = tc.family.Ital
 				out = append(out, ital)
 			} else if isBold {
-				curFont = tc.f.Regular
+				curFont = tc.family.Regular
 				out = append(out, regular)
 			} else if isItal {
-				curFont = tc.f.BoldItal
+				curFont = tc.family.BoldItal
 				out = append(out, boldItal)
 			} else {
-				curFont = tc.f.Bold
+				curFont = tc.family.Bold
 				out = append(out, bold)
 			}
 			isBold = !isBold
@@ -398,16 +398,16 @@ func (tc *Controller) tokenize(src FormatText) []token {
 			advs = advs[:0]
 			kerns = kerns[:0]
 			if isItal && isBold {
-				curFont = tc.f.Bold
+				curFont = tc.family.Bold
 				out = append(out, bold)
 			} else if isItal {
-				curFont = tc.f.Regular
+				curFont = tc.family.Regular
 				out = append(out, regular)
 			} else if isBold {
-				curFont = tc.f.BoldItal
+				curFont = tc.family.BoldItal
 				out = append(out, boldItal)
 			} else {
-				curFont = tc.f.Ital
+				curFont = tc.family.Ital
 				out = append(out, ital)
 			}
 			isItal = !isItal
@@ -442,12 +442,13 @@ type node struct {
 // Alternative algorithms either cannot be adopted to text that includes optional hyphenated breaks and/or negative glyph advances, or find
 // potentially suboptimal line fits.
 // TODO: gracefully handle pathological cases.
-func (tc *Controller) breakLines(squishTolerance, stretchTolerance float64) ([]int, []float64, []float64, error) {
+// breakpoints, lineWidths, adjs, err
+func (tc *Controller) breakLines(squishTolerance, stretchTolerance float64) (breakpoints []int, lineWidths []float64, adjs []float64, err error) {
 	curFont := tc.curFont
 
 	breakIndices := []int{}
 	lineLengths := []float64{}
-	adjs := []float64{}
+	//adjs := []float64{}
 	activeNodes := []node{{
 		tIndex:    0,
 		pWidth:    0,
@@ -461,6 +462,8 @@ func (tc *Controller) breakLines(squishTolerance, stretchTolerance float64) ([]i
 	var runWidth float64
 	for i := 0; i < len(tc.tokens); i++ {
 		switch v := tc.tokens[i].(type) {
+		case flIndent:
+			// TODO
 		case box:
 			curWidth += v.Width()
 			runWidth += v.Width()
@@ -525,13 +528,13 @@ func (tc *Controller) breakLines(squishTolerance, stretchTolerance float64) ([]i
 		case fWeight:
 			switch v {
 			case regular:
-				curFont = tc.f.Regular
+				curFont = tc.family.Regular
 			case bold:
-				curFont = tc.f.Bold
+				curFont = tc.family.Bold
 			case ital:
-				curFont = tc.f.Ital
+				curFont = tc.family.Ital
 			case boldItal:
-				curFont = tc.f.BoldItal
+				curFont = tc.family.BoldItal
 			}
 		case ncChange:
 		case hyphen:
@@ -569,7 +572,7 @@ func (tc *Controller) breakLines(squishTolerance, stretchTolerance float64) ([]i
 			lineStart = 0
 		}
 	}
-	if tc.j == Ragged {
+	if tc.just == Ragged {
 		adjs = make([]float64, len(adjs))
 	}
 	return breakIndices, lineLengths, adjs, nil
@@ -595,9 +598,9 @@ func (tc *Controller) writeLines(c *gdf.ContentStream, numLines int) {
 		if _, ok := breaks[i]; ok {
 			var dif float64
 			var alignAdj float64
-			if tc.adjs[lineCount] == 0 && (tc.a == Center || tc.a == Right) && len(run) != 0 {
+			if tc.adjs[lineCount] == 0 && (tc.alignment == Center || tc.alignment == Right) && len(run) != 0 {
 				dif = tc.lineWidth - tc.lineWidths[lineCount]
-				switch tc.a {
+				switch tc.alignment {
 				case Center:
 					alignAdj = dif / 2
 				case Right:
@@ -640,9 +643,9 @@ func (tc *Controller) writeLines(c *gdf.ContentStream, numLines int) {
 			if len(run) != 0 {
 				var dif float64
 				var alignAdj float64
-				if tc.adjs[lineCount] == 0 && (tc.a == Center || tc.a == Right) && len(run) != 0 {
+				if tc.adjs[lineCount] == 0 && (tc.alignment == Center || tc.alignment == Right) && len(run) != 0 {
 					dif = tc.lineWidth - tc.lineWidths[lineCount]
-					switch tc.a {
+					switch tc.alignment {
 					case Center:
 						alignAdj = dif / 2
 					case Right:
@@ -666,21 +669,21 @@ func (tc *Controller) writeLines(c *gdf.ContentStream, numLines int) {
 			kerns = kerns[:0]
 			switch v {
 			case regular:
-				c.SetFont(tc.fontSize, tc.f.Regular)
+				c.SetFont(tc.fontSize, tc.family.Regular)
 			case bold:
-				c.SetFont(tc.fontSize, tc.f.Bold)
+				c.SetFont(tc.fontSize, tc.family.Bold)
 			case ital:
-				c.SetFont(tc.fontSize, tc.f.Ital)
+				c.SetFont(tc.fontSize, tc.family.Ital)
 			case boldItal:
-				c.SetFont(tc.fontSize, tc.f.BoldItal)
+				c.SetFont(tc.fontSize, tc.family.BoldItal)
 			}
 		case ncChange:
 			if len(run) != 0 {
 				var dif float64
 				var alignAdj float64
-				if tc.adjs[lineCount] == 0 && (tc.a == Center || tc.a == Right) && len(run) != 0 {
+				if tc.adjs[lineCount] == 0 && (tc.alignment == Center || tc.alignment == Right) && len(run) != 0 {
 					dif = tc.lineWidth - tc.lineWidths[lineCount]
-					switch tc.a {
+					switch tc.alignment {
 					case Center:
 						alignAdj = dif / 2
 					case Right:

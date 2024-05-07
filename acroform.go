@@ -41,8 +41,8 @@ func (a *acroform) encode(w io.Writer) (int, error) {
 }
 
 func (p *PDF) newAcroform() *acroform {
-	p.catalog.Acroform = new(acroform)
-	return p.catalog.Acroform
+	p.catalog.acroform = new(acroform)
+	return p.catalog.acroform
 }
 
 // An acroType represents one of the various kinds of interactive AcroForm fields.
@@ -72,10 +72,10 @@ func (a acroType) String() string {
 // All AcroFields should be created using the PDF.NewAcroField() method. Once an AcroField is created, it must be paired
 // with a Widget and added to a Page that must, in turn, be appended to p.
 func (p *PDF) NewAcroField() *AcroField {
-	if p.catalog.Acroform == nil {
+	if p.catalog.acroform == nil {
 		p.newAcroform()
 	}
-	aform := p.catalog.Acroform
+	aform := p.catalog.acroform
 	out := &AcroField{
 		parent: aform,
 	}

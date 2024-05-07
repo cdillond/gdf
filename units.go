@@ -52,10 +52,10 @@ var (
 	FivePt    = Margins{5, 5, 5, 5}
 )
 
-// FUToPt converts n font units to points given a font size in points. For PDFs, ppem is always 1000.
+// FUToPt converts n font units to points given a font size in points.
 func FUToPt(n, fontSize float64) float64 { return n * fontSize / 1000 }
 
-// PtToFU converts n points to font units given a font size in points. For PDFs, ppem is always 1000.
+// PtToFU converts n points to font units given a font size in points.
 func PtToFU(n, fontSize float64) float64 { return n * 1000 / fontSize }
 
 // Bounds returns the Rect that results from applying m to r without checking whether that Rect is valid.

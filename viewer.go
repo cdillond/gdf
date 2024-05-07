@@ -18,7 +18,7 @@ type ViewPrefs struct {
 
 // SetViewPrefs indicates the desired display settings for the PDF viewer to use when displaying p.
 func (p *PDF) SetViewPrefs(v ViewPrefs) {
-	p.catalog.prefs = v
+	p.catalog.ViewPrefs = v
 }
 
 func (v ViewPrefs) bytes() []byte {
@@ -71,8 +71,9 @@ func (v ViewPrefs) bytes() []byte {
 	if len(fields) == 0 {
 		return nil
 	}
-	d := dict(len(fields)*32, fields)
-	return d[:len(d)-1]
+	//d := dict(len(fields)*32, fields)
+
+	return subdict(len(fields)*32, fields)
 }
 
 type PageRange struct {

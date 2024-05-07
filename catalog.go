@@ -5,28 +5,28 @@ import (
 )
 
 type catalog struct {
-	Pages    *pages
+	pages    *pages
 	streams  []obj
-	prefs    ViewPrefs
-	Acroform *acroform
+	acroform *acroform
 
 	images []*Image
 	xforms []*XContent
-	//xobjs []*XObject
-	pageLayout
-	pageMode
-	lang   string
-	refnum int
+
+	ViewPrefs  ViewPrefs
+	PageLayout pageLayout
+	PageMode   pageMode
+	Language   string
+	refnum     int
 }
 
 func (c *catalog) id() int { return c.refnum }
 func (c *catalog) children() []obj {
 	var i int
-	out := make([]obj, 1+oneif(len(c.Acroform.acrofields) > 0)+len(c.images)+len(c.xforms)+len(c.streams))
-	out[i] = c.Pages
+	out := make([]obj, 1+oneif(len(c.acroform.acrofields) > 0)+len(c.images)+len(c.xforms)+len(c.streams))
+	out[i] = c.pages
 	i++
-	if len(c.Acroform.acrofields) > 0 {
-		out[i] = c.Acroform
+	if len(c.acroform.acrofields) > 0 {
+		out[i] = c.acroform
 		i++
 	}
 	for j := range c.images {
@@ -47,29 +47,29 @@ func (c *catalog) mark(i int) { c.refnum = i }
 func (c *catalog) encode(w io.Writer) (int, error) {
 	fields := []field{
 		{"/Type", "/Catalog"},
-		{"/Pages", iref(c.Pages)},
+		{"/Pages", iref(c.pages)},
 	}
 	if len(c.streams) > 0 {
 		fields = append(fields, field{
 			"/Metadata", iref(c.streams[0]),
 		})
 	}
-	if len(c.Acroform.acrofields) > 0 {
+	if len(c.acroform.acrofields) > 0 {
 		fields = append(fields, field{
-			"/AcroForm", iref(c.Acroform),
+			"/AcroForm", iref(c.acroform),
 		})
 	}
-	if b := c.prefs.bytes(); b != nil {
+	if b := c.ViewPrefs.bytes(); b != nil {
 		fields = append(fields, field{"/ViewerPreferences", b})
 	}
-	if s := c.pageLayout.String(); s != "" {
+	if s := c.PageLayout.String(); s != "" {
 		fields = append(fields, field{"/PageLayout", s})
 	}
-	if s := c.pageMode.String(); s != "" {
+	if s := c.PageMode.String(); s != "" {
 		fields = append(fields, field{"/PageMode", s})
 	}
-	if c.lang != "" {
-		fields = append(fields, field{"/Lang", htxt([]byte(c.lang))})
+	if c.Language != "" {
+		fields = append(fields, field{"/Lang", htxt([]byte(c.Language))})
 	}
 	return w.Write(dict(64, fields))
 }
@@ -78,15 +78,7 @@ func (c *catalog) encode(w io.Writer) (int, error) {
 // NOTE: gdf currently only supports Windows-1252 ("WinAnsiEncoding") for most textual elements in a PDF document. Text that appears in annotations may represent a wider range
 // of characters, depending on the reader used to view the PDF.
 func (p *PDF) SetLanguage(s string) {
-	p.catalog.lang = s
-}
-
-func (p *PDF) SetPageLayout(pl pageLayout) {
-	p.catalog.pageLayout = pl
-}
-
-func (p *PDF) SetPageMode(pm pageMode) {
-	p.catalog.pageMode = pm
+	p.catalog.Language = s
 }
 
 type pageLayout uint
