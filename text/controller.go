@@ -54,7 +54,7 @@ type ControllerCfg struct {
 	FontSize       float64
 	Leading        float64
 	IsIndented     bool
-	NColor, SColor gdf.Color // default non-stroking and stroking colors
+	NColor, SColor gdf.Color // default nonstroking and stroking colors
 	Looseness      float64   // the ratio of the maximum allowable space advance and the normal space advance in justified text
 	Tightness      float64   // the ratio of the minimum allowable space advance and the normal space advance in justified text
 	IsBold, IsItal bool
@@ -105,7 +105,7 @@ FormatText represents a slice of runes that can specify the formatting and conte
 to the formatting directives contained in FormatText:
  1. rune(-1) is interpreted as end of text. Any runes that appear after this character will not be parsed.
  2. rune(-2) is interpreted as a color indicator. This character must be followed by three comma-separated 3-digit integers in [0,255]
-    that specify the red, green, and blue components of an RGBColor. (This is equivalent to setting the non-stroking color of the document to
+    that specify the red, green, and blue components of an RGBColor. (This is equivalent to setting the nonstroking color of the document to
     RGBColor{R:float64(red)/255, G:float64(green)/255, B:float64(blue)/255}).
  3. rune(-3) toggles bold text on and off.
  4. rune(-4) toggles italic text on and off.
@@ -272,7 +272,7 @@ type flIndent float64
 
 func (f flIndent) Width() float64 { return 0 }
 
-// non-stroking color change
+// nonstroking color change
 type ncChange struct {
 	r, g, b uint
 }

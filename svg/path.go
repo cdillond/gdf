@@ -18,6 +18,8 @@ const (
 	closePath
 	circle
 	ellipse
+	rect
+	arc
 	badpathOp
 )
 
@@ -35,6 +37,8 @@ func svgPathOp2pdfPathOp(p svgPathOp) pdfPathOp {
 		return closePath
 	case cAbs, cRel, sAbs, sRel, qAbs, qRel, tAbs, tRel:
 		return curveTo
+	case aAbs, aRel:
+		return arc
 	}
 	return badpathOp
 }
@@ -185,7 +189,57 @@ func resolvePathCmds(data []svgCmd) []pdfPathCmd {
 				op:   svgPathOp2pdfPathOp(rcmd.op),
 				args: cubic[:],
 			})
+		case aRel:
+			ep := endParams{
+				cur.X, cur.Y,
+				rcmd.args[0],
+				rcmd.args[1],
+				gdf.Deg * rcmd.args[2],
+				rcmd.args[3],
+				rcmd.args[4],
+				cur.X + rcmd.args[5],
+				cur.Y + rcmd.args[6],
+			}
+			cur.X += rcmd.args[5]
+			cur.Y += rcmd.args[6]
+			c := center(ep)
+			out = append(out, pdfPathCmd{
+				op: svgPathOp2pdfPathOp(rcmd.op),
+				args: []gdf.Point{
+					{c.cx, c.cy},
+					{c.rx, c.ry},
+					{c.theta, c.delta},
+					{X: c.phi},
+				},
+			},
+			)
+
+		case aAbs:
+			ep := endParams{
+				x1: cur.X, y1: cur.Y,
+				rx:        rcmd.args[0],
+				ry:        rcmd.args[1],
+				phi:       gdf.Deg * rcmd.args[2],
+				largeFlag: rcmd.args[3],
+				sweepFlag: rcmd.args[4],
+				x2:        rcmd.args[5],
+				y2:        rcmd.args[6],
+			}
+			cur.X = rcmd.args[5]
+			cur.Y = rcmd.args[6]
+			c := center(ep)
+			out = append(out, pdfPathCmd{
+				op: svgPathOp2pdfPathOp(rcmd.op),
+				args: []gdf.Point{
+					{c.cx, c.cy},
+					{c.rx, c.ry},
+					{c.theta, c.delta},
+					{X: c.phi},
+				},
+			},
+			)
 		}
 	}
+
 	return out
 }

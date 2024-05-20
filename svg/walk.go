@@ -14,6 +14,15 @@ type svgRoot struct {
 	defs           map[string]*node
 }
 
+/*
+SVGs may specify a height and width as well as a "viewBox". If no viewBox is given, it is assumed
+to be coincident with the height and width. That is, the coordinates begin (at the top left of the page)
+at (0, 0), and end at the bottom right of the page at (w, h). Any graphics drawn outside of this box
+are not considered. If both a viewBox and height and width parameters are provided, then the height
+and width are interpreted instead as scale values. The values of an SVG with a height and width of 5px
+but a viewBox of 0 0 10 10 are scaled down by 2.
+*/
+
 func Decode(r io.Reader) (gdf.XContent, error) {
 	out := svgRoot{
 		n:        new(node),
@@ -22,31 +31,56 @@ func Decode(r io.Reader) (gdf.XContent, error) {
 		WScale:   1,
 		defs:     make(map[string]*node),
 	}
-	out.xContent.Filter = gdf.NoFilter
+	out.xContent.Filter = gdf.NoFilter // for now...
+	// the SVG gets unmarshalled into a tree of structs
 	unmarshalXML(out.n, r, out.defs)
 	out.n = out.n.children[0]
+
 	var h, w float64
 	if out.n.self.height != nil {
 		h = *out.n.self.height
+		out.Height = h
 	}
 	if out.n.self.width != nil {
 		w = *out.n.self.width
-	}
-	if out.n.self.viewBox != nil {
-		out.Height = px * (out.n.self.viewBox[3] - out.n.self.viewBox[1])
-		out.Width = px * (out.n.self.viewBox[2] - out.n.self.viewBox[0])
-	} else {
-		out.Height = h
 		out.Width = w
 	}
-	if out.Height != 0 && h != 0 {
+
+	if out.n.self.viewBox != nil {
+		out.Width = px * (out.n.self.viewBox[2] - out.n.self.viewBox[0])
+		/*if out.n.self.width == nil {
+			out.Width = w
+		}*/
+		out.Height = px * (out.n.self.viewBox[3] - out.n.self.viewBox[1])
+		/*if out.n.self.height == nil {
+			out.Height = h
+		}*/
+
+	}
+
+	if h != 0 {
 		out.HScale = out.Height / h
+	} else {
+		out.HScale = 1
 	}
-	if out.WScale != 0 && w != 0 {
+	if w != 0 {
 		out.WScale = out.Width / w
+	} else {
+		out.WScale = 1
 	}
-	out.xContent.BBox.URY = out.Height
-	out.xContent.BBox.URX = out.Width
+
+	if out.n.self.viewBox != nil {
+		out.xContent.BBox = gdf.Rect{
+			LLX: out.n.self.viewBox[0],
+			LLY: out.n.self.viewBox[1],
+			URX: out.n.self.viewBox[2],
+			URY: out.n.self.viewBox[3],
+		}
+	} else {
+		out.xContent.BBox.URY = out.Height
+		out.xContent.BBox.URX = out.Width
+	}
+
 	walk(out.n, &out.xContent, out.HScale, out.WScale, out.defs)
 	return out.xContent, nil
 }
@@ -115,6 +149,12 @@ func walk(n *node, x *gdf.XContent, hScale, wScale float64, defs map[string]*nod
 		cmds = append(cmds, pdfPathCmd{
 			op:   circle,
 			args: []gdf.Point{{X: *n.self.cx, Y: *n.self.cy}, {X: *n.self.r, Y: 0}},
+		})
+	}
+	if n.k == rectKind {
+		cmds = append(cmds, pdfPathCmd{
+			op:   rect,
+			args: []gdf.Point{{X: *n.self.x, Y: *n.self.y}, {X: *n.self.width, Y: *n.self.height}},
 		})
 	}
 	if n.k == ellipseKind {

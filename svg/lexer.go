@@ -1,6 +1,5 @@
 package svg
 
-
 type lexer struct {
 	src []byte
 	n   int
@@ -35,8 +34,8 @@ func (l *lexer) next() (byte, bool) {
 	var c byte
 	if ok {
 		c = l.src[l.n]
-		l.n++
 	}
+	l.n++
 	return c, ok
 }
 
@@ -79,6 +78,12 @@ func (l *lexer) skip() {
 	l.n++
 }
 
+// reverse to position i
+func (l *lexer) backup(i int) {
+	l.n = i
+}
+
+/*
 func (l *lexer) skipWSP() {
 	for l.n < len(l.src) && l.src[l.n] < '!' {
 		l.n++
@@ -89,9 +94,7 @@ func (l *lexer) skipWSPComma() {
 	for l.n < len(l.src) && (l.src[l.n] == ',' || l.src[l.n] < '!') {
 		l.n++
 	}
-}
-
-func isDigit(c byte) bool { return c >= '0' && c <= '9' }
+}*/
 
 type typ int
 
@@ -147,15 +150,14 @@ const (
 	tAbs svgPathOp = 'T'
 	tRel svgPathOp = 't'
 
-	badPathToken = 'A'
+	aAbs svgPathOp = 'A'
+	aRel svgPathOp = 'a'
+
+	badPathToken svgPathOp = '?'
 )
 
-func (p svgPathOp) isValid() bool {
-	return p == mAbs || p == mRel || p == lAbs || p == lRel
-}
-
 func lexSVGPathOp(l *lexer) stateFn {
-	l.skipWSPComma()
+	l.skipCWSP()
 	c, ok := l.next()
 	if !ok {
 		return nil
@@ -168,7 +170,7 @@ func lexSVGPathOp(l *lexer) stateFn {
 }
 
 func lexPathNum(l *lexer) stateFn {
-	l.skipWSPComma()
+	l.skipCWSP()
 	i := l.n
 
 	var seenDot bool
@@ -195,7 +197,7 @@ func lexPathNum(l *lexer) stateFn {
 			seenDot = true
 		case ',', '\x20', '\t', '\n', '\r':
 			l.out <- token{typ: num, text: l.src[i : l.n-1]}
-			l.skipWSPComma()
+			l.skipCWSP()
 			v, ok := l.peek()
 			if !ok {
 				return nil
@@ -234,7 +236,7 @@ exponent:
 			return lexPathNum
 		case ',', '\x20', '\t', '\n', '\r':
 			l.out <- token{typ: num, text: l.src[i : l.n-1]}
-			l.skipWSPComma()
+			l.skipCWSP()
 			v, ok := l.peek()
 			if !ok {
 				return nil
@@ -253,9 +255,14 @@ exponent:
 	return nil
 }
 
+// annoying! The problem is that the flag args can be, e.g. 00 or 01 instead of 0 0 or 0 1.
+// elliptical_arc::=( "A" | "a" ) wsp* elliptical_arc_argument_sequence
+// elliptical_arc_argument_sequence::=elliptical_arc_argument | (elliptical_arc_argument comma_wsp? elliptical_arc_argument_sequence)
+// elliptical_arc_argument::=number comma_wsp? number comma_wsp? number comma_wsp flag comma_wsp? flag comma_wsp? coordinate_pair
+
 // Very similar to LexPathNum.
 func lexPolyNum(l *lexer) stateFn {
-	l.skipWSPComma()
+	l.skipCWSP()
 	i := l.n
 
 	var seenDot bool
@@ -282,7 +289,7 @@ func lexPolyNum(l *lexer) stateFn {
 			seenDot = true
 		case ',', '\x20', '\t', '\n', '\r':
 			l.out <- token{typ: num, text: l.src[i : l.n-1]}
-			l.skipWSPComma()
+			l.skipCWSP()
 			v, ok := l.peek()
 			if !ok {
 				return nil
@@ -321,7 +328,7 @@ exponent:
 			return lexPolyNum
 		case ',', '\x20', '\t', '\n', '\r':
 			l.out <- token{typ: num, text: l.src[i : l.n-1]}
-			l.skipWSPComma()
+			l.skipCWSP()
 			v, ok := l.peek()
 			if !ok {
 				return nil
@@ -344,7 +351,7 @@ func parseCmd(b []byte) svgPathOp {
 	if len(b) != 1 {
 		return 0
 	}
-	valid := []byte("CcHhLlMmQqSsTtVvZz")
+	valid := []byte("AaCcHhLlMmQqSsTtVvZz")
 	for i := range valid {
 		if b[0] == valid[i] {
 			return svgPathOp(b[0])

@@ -88,6 +88,8 @@ type attributes struct {
 	transform      []gdf.Matrix
 	viewBox        *[4]float64
 	width          *float64
+	x              *float64
+	y              *float64
 }
 
 var classes = map[string]attributes{}
@@ -196,6 +198,12 @@ func unmarshalCSS(s string) {
 			case "width":
 				f64, _ := parseAbsoluteLength(after)
 				a.width = &f64
+			case "x":
+				f64, _ := parseAbsoluteLength(after)
+				a.x = &f64
+			case "y":
+				f64, _ := parseAbsoluteLength(after)
+				a.y = &f64
 			}
 		}
 		classes[string(cname)] = a
@@ -232,6 +240,8 @@ func merge(parent, child attributes) attributes {
 		strokeWidth:    inherit(parent.strokeWidth, child.strokeWidth),
 		transform:      inheritSlice(parent.transform, child.transform),
 		viewBox:        inherit(parent.viewBox, child.viewBox),
+		x:              inherit(parent.x, child.x),
+		y:              inherit(parent.y, child.y),
 	}
 }
 

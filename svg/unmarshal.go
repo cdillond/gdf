@@ -173,6 +173,12 @@ func unmarshalAttrs(n *node, x []xml.Attr) error {
 		case "width":
 			f64, _ := parseAbsoluteLength(v.Value)
 			n.self.width = &f64
+		case "x":
+			f64, _ := parseAbsoluteLength(v.Value)
+			n.self.x = &f64
+		case "y":
+			f64, _ := parseAbsoluteLength(v.Value)
+			n.self.y = &f64
 		}
 	}
 	return nil

@@ -11,9 +11,9 @@ type GS struct {
 	DashPattern
 	PathState
 	CurPt               Point      // Current path point
-	NColorSpace         ColorSpace // non-stroking
+	NColorSpace         ColorSpace // nonstroking
 	SColorSpace         ColorSpace // stroking
-	NColor              Color      // non-stroking
+	NColor              Color      // nonstroking
 	SColor              Color      // stroking
 	LineWidth           float64
 	MiterLimit          float64
@@ -169,7 +169,7 @@ func (c *ContentStream) SetFlatness(f float64) {
 	c.buf = cmdf(c.buf, op_i, f)
 }
 
-// SetAlphaConst sets c's non-stroking or stroking alpha constant to a, which must be a value in [0.0, 1.0], where
+// SetAlphaConst sets c's nonstroking or stroking alpha constant to a, which must be a value in [0.0, 1.0], where
 // 0 corresponds to full transparency and 1 corresponds to full opacity.
 func (c *ContentStream) SetAlphaConst(a float64, stroke bool) {
 	key := "/ca"

@@ -50,7 +50,7 @@ func ScaleBy(scaleX, scaleY float64) Matrix {
 func Rotate(theta float64) Matrix {
 	// [rc rs -rs rc 0 0]
 	/*
-		Rotations shall be produced by [rc rs -rs rc 0 0], where rc = cos(q ) and rs = sin(q) which has the
+		Rotations shall be produced by [rc rs -rs rc 0 0], where rc = cos(q) and rs = sin(q) which has the
 		effect of rotating the coordinate system axes by an angle q counter clockwise.
 	*/
 	return Matrix{math.Cos(theta), math.Sin(theta), -math.Sin(theta), math.Cos(theta), 0, 0}

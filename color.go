@@ -43,7 +43,7 @@ func (c *ContentStream) SetColorStroke(cl Color) {
 	c.NColor = cl
 }
 
-// Sets c's non-stroking color (NColor) to cl and sets its NColorSpace to cl's ColorSpace.
+// Sets c's nonstroking color (NColor) to cl and sets its NColorSpace to cl's ColorSpace.
 func (c *ContentStream) SetColor(cl Color) {
 	switch v := cl.(type) {
 	case GColor:

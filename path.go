@@ -1,9 +1,5 @@
 package gdf
 
-import (
-	"math"
-)
-
 // A FillRule represents an algorithm for determining whether a particular point is interior to a path. See ISO 32000-2:2020 sections
 // 8.5.3.3.2 and 8.5.3.3.3 for further details. NonZero is the default, but EvenOdd can produce results that are easier to intuit.
 type FillRule bool
@@ -73,113 +69,6 @@ func (c *ContentStream) CubicBezier3(x1, y1, x3, y3 float64) {
 		c.CurPt = Point{x3, y3}
 		c.buf = cmdf(c.buf, op_y, x1, y1, x3, y3)
 	}
-}
-
-// Circle begins a new path and appends a circle of radius r with a center point of (x, y) to the path.
-// The new current point becomes (x + r, y).
-func (c *ContentStream) Circle(x, y, r float64) {
-	c.MoveTo(x+r, y)
-	c.CurPt = Point{x + r, y}
-
-	// reference: https://pomax.github.io/bezierinfo/#circles_cubic
-	pointAx := r * 1.
-	pointAy := r * 0.265216489839544
-
-	pointBx := r * 0.8946431596345822
-	pointBy := r * 0.5195704027385128
-
-	endX := r * 0.70710678118654752
-	endY := endX
-
-	// This forms the upper-right quadrant of the circle.
-	c.buf = cmdf(c.buf, op_c,
-		x+pointAx, y+pointAy,
-		x+pointBx, y+pointBy,
-		x+endX, y+endY)
-
-	c.buf = cmdf(c.buf, op_c,
-		x+pointBy, y+pointBx,
-		x+pointAy, y+pointAx,
-		x, y+r)
-
-	// Upper-left quadrant
-	c.buf = cmdf(c.buf, op_c,
-		x-pointAy, y+pointAx,
-		x-pointBy, y+pointBx,
-		x-endX, y+endY)
-
-	c.buf = cmdf(c.buf, op_c,
-		x-pointBx, y+pointBy,
-		x-pointAx, y+pointAy,
-		x-r, y)
-
-	// Lower-left quadrant
-	c.buf = cmdf(c.buf, op_c,
-		x-pointAx, y-pointAy,
-		x-pointBx, y-pointBy,
-		x-endX, y-endY)
-
-	c.buf = cmdf(c.buf, op_c,
-		x-pointBy, y-pointBx,
-		x-pointAy, y-pointAx,
-		x, y-r)
-
-	// Lower-right quadrant
-	c.buf = cmdf(c.buf, op_c,
-		x+pointAy, y-pointAx,
-		x+pointBy, y-pointBx,
-		x+endX, y-endY)
-
-	c.buf = cmdf(c.buf, op_c,
-		x+pointBx, y-pointBy,
-		x+pointAx, y-pointAy,
-		x+r, y)
-}
-
-func (c *ContentStream) CArc(x, y, r, theta float64) {
-
-	// if theta is ?, break it up...
-	var total, a float64
-
-	for i := 0; i < 4 && total < theta; i++ {
-		a = min(90*Deg, theta-total)
-		total += a
-		k := (4.0 / 3.0) * math.Tan(a/4)
-
-		pointAX := r
-		pointAY := r * k
-
-		pointBX := r * (math.Cos(a) + k*math.Sin(a))
-		pointBY := r * (math.Sin(a) - k*math.Cos(a))
-
-		endX := r * math.Cos(a)
-		endY := r * math.Sin(a)
-
-		switch i {
-		case 0:
-			c.MoveTo(x+r, y)
-			c.CubicBezier1(pointAX+x, pointAY+y, pointBX+x, pointBY+y, endX+x, endY+y)
-		case 1:
-			c.MoveTo(x, y+r)
-			c.CubicBezier1(pointAX+x, pointAY+y, pointBX+x, pointBY+y, endX+x, endY+y)
-		case 2:
-			c.MoveTo(x-r, y)
-			c.CubicBezier1(pointAX+x, pointAY+y, pointBX+x, pointBY+y, endX+x, endY+y)
-		case 3:
-			c.MoveTo(x, y-r)
-			c.CubicBezier1(pointAX+x, pointAY+y, pointBX+x, pointBY+y, endX+x, endY+y)
-		}
-
-	}
-
-}
-
-func (c *ContentStream) Ellipse(x, y, rx, ry float64) {
-	// rx is 1
-	//c.QSave()
-	c.Concat(ScaleBy(1, ry/rx))
-	c.Circle(x, y, rx)
-	//c.QRestore()
 }
 
 // ClosePath closes the current path; h.

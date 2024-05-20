@@ -1,0 +1,224 @@
+package svg
+
+import (
+	"fmt"
+	"math"
+
+	"github.com/cdillond/gdf"
+)
+
+func drawArc(start, r gdf.Point, phi float64, isA, isS bool, end gdf.Point) (args [][]gdf.Point) {
+	if start == end {
+		return
+	}
+
+	r.X = math.Abs(r.X)
+	r.Y = math.Abs(r.Y)
+	r, c, theta, dtheta := centerParams(start, end, r, phi, isA, isS)
+
+	const (
+		alpha = 0.551784777779014 //0.26511477349130245
+		tau   = math.Pi / 2.0
+	)
+
+	segs := dtheta / tau
+
+	n := math.Floor(segs)
+	cosPhi := math.Cos(phi)
+	sinPhi := math.Sin(phi)
+
+	p1 := parametric(c, r, cosPhi, sinPhi, theta)
+	ep1 := parametricDyDx(c, r, cosPhi, sinPhi, theta)
+
+	t := theta + tau
+	fmt.Println("n is ", n)
+	for i := 0; i < int(math.Abs(n)); i++ {
+		p2 := parametric(c, r, cosPhi, sinPhi, t)
+		ep2 := parametricDyDx(c, r, cosPhi, sinPhi, t)
+
+		q1 := gdf.Point{X: p1.X + alpha*ep1.X, Y: p1.Y + alpha*ep1.Y}
+		q2 := gdf.Point{X: p2.X - alpha*ep2.X, Y: p2.Y - alpha*ep2.Y}
+
+		args = append(args, []gdf.Point{p1, q1, q2, p2})
+		p1 = p2
+		ep1 = ep2
+		t += tau
+	}
+
+	if n != math.Ceil(math.Abs(segs)) {
+		step := t - tau
+		t = theta + dtheta
+		at := math.Tan(step / 2.0)
+		a := math.Sin(step) * (math.Sqrt(4+3*at*at) - 1.0) / 3.0
+
+		p2 := parametric(c, r, cosPhi, sinPhi, t)
+		ep2 := parametricDyDx(c, r, cosPhi, sinPhi, t)
+
+		q1 := gdf.Point{p1.X + a*ep1.X, p1.Y + a*ep1.Y}
+		q2 := gdf.Point{p2.X - a*ep2.X, p2.Y - a*ep2.Y}
+
+		args = append(args, []gdf.Point{p1, q1, q2, p2})
+	}
+	fmt.Println(args)
+	return args
+
+}
+
+func getPoint(r, c gdf.Point, theta float64) gdf.Point {
+	return gdf.Point{
+		X: c.X + r.X*math.Cos(theta),
+		Y: c.Y + r.Y*math.Sin(theta),
+	}
+}
+
+// returns the derivative of the elliptic curve function E at theta
+func getDyDx(r gdf.Point, theta float64) (dy, dx float64) {
+	sin, cos := math.Sincos(theta)
+	dx = r.X * -1.0 * sin
+	dy = r.X * cos
+	return dy, dx
+}
+
+// see: https://www.w3.org/TR/SVG2/paths.html
+func endPoints(r, c gdf.Point, theta, delta float64) (p1, p2 gdf.Point) {
+	// the original point is
+	p1.X = c.X + r.X*math.Cos(theta)
+	p1.Y = c.Y + r.Y*math.Sin(theta)
+
+	// the end point is a similar story
+	p2.X = c.X + r.X*math.Cos(theta+delta)
+	p2.Y = c.Y + r.Y*math.Sin(theta+delta)
+
+	return p1, p2
+}
+
+/*
+func controlPoints(r, c, p1, p2 gdf.Point, theta, delta float64) (q1, q2 gdf.Point) {
+	const alpha = 0.26511477349130245
+	//find the slope of the tangent of the ellipse at p1
+	dX0 := r.X * (-1.0 * math.Sin(theta))
+	dY0 := r.Y * (math.Cos(theta))
+
+	dX1 := r.X * (-1.0 * math.Sin(theta+delta))
+	dY1 := r.Y * (math.Cos(theta + delta))
+
+	return q1, q2
+}*/
+
+// https://www.w3.org/TR/SVG2/implnote.html#ArcConversionEndpointToCenter
+func centerParams(start, end, radii gdf.Point, phi float64, isA, isS bool) (r, c gdf.Point, theta, dtheta float64) {
+	// p suffix = "prime"
+	// s suffix = "squared"
+	r = radii
+	if r.X == 0 || r.Y == 0 {
+		// B.2.5. Correction of out-of-range radii: treat this as a line.
+		return r, c, theta, dtheta
+	}
+	/* TODO
+	if r.X == r.Y {
+		// we have a circle
+	}
+	*/
+	sinPhi, cosPhi := math.Sincos(phi)
+
+	dX := (start.X - end.X) / 2.0
+	dY := (start.Y - end.Y) / 2.0
+
+	x1p := dX*cosPhi - dY*sinPhi
+	y1p := -dX*sinPhi + dY*cosPhi
+
+	x1ps := x1p * x1p
+	y1ps := y1p * y1p
+
+	// Ensure all radii are positive.
+	r.X, r.Y = math.Abs(r.X), math.Abs(r.Y)
+
+	// Ensure all radii are large enough.
+	if V := x1ps/(r.X*r.X) + y1ps/(r.Y*r.Y); V > 1.0 {
+		srV := math.Sqrt(V)
+		r.X *= srV
+		r.Y *= srV
+	}
+
+	rs := gdf.Point{X: r.X * r.X, Y: r.Y * r.Y}
+
+	num := rs.X*rs.Y - rs.X*y1ps - rs.Y*x1ps
+	den := rs.X*y1ps + rs.Y*x1ps
+
+	coeff := math.Sqrt(math.Max(0, num/den))
+	if isA == isS {
+		coeff = -coeff
+	}
+
+	cp := [2]float64{
+		coeff * (r.X * y1p / r.Y),
+		coeff * (r.Y * x1p / r.X) * -1.0,
+	}
+	vec0 := [2]float64{cosPhi, -1 * sinPhi}
+	vec1 := [2]float64{sinPhi, cosPhi}
+
+	tvec := [2]float64{
+		vec0[0]*cp[0] + vec0[1] + cp[1],
+		vec1[0]*cp[0] + vec1[1] + cp[1],
+	}
+
+	avgX := (start.X + end.X) / 2.0
+	avgY := (start.Y + end.Y) / 2.0
+
+	c.X = tvec[0] + avgX
+	c.Y = tvec[1] + avgY
+
+	v := [2]float64{(x1p - cp[0]) / r.X, (y1p - cp[1]) / r.Y}
+	u := [2]float64{(-x1p - cp[0]) / r.X, (-y1p - cp[1]) / r.Y}
+
+	theta = angle([2]float64{1, 0}, v)
+	dtheta = math.Mod(angle(v, u), 2*math.Pi)
+	if !isS {
+		dtheta = -1 * math.Abs(dtheta)
+	} else {
+		dtheta = math.Abs(dtheta)
+	}
+	return r, c, theta, dtheta
+}
+
+func parametric(c, r gdf.Point, cosPhi, sinPhi, t float64) gdf.Point {
+	a := r.X * math.Cos(t)
+	b := r.Y * math.Sin(t)
+	return gdf.Point{
+		X: c.X + a*cosPhi - b*sinPhi,
+		Y: c.Y + a*sinPhi - b*cosPhi}
+}
+func parametricDyDx(c, r gdf.Point, cosPhi, sinPhi, t float64) gdf.Point {
+	a := -r.X * math.Cos(t)
+	b := r.Y * math.Sin(t)
+	return gdf.Point{
+		X: a*cosPhi - b*sinPhi,
+		Y: a*sinPhi + b*cosPhi,
+	}
+}
+
+func angle(u, v [2]float64) float64 {
+	dp := dot(u, v)
+	sign := 1.0
+	if dp < 0 {
+		sign = -1
+	}
+	return sign * math.Acos(clamp(dp/(mag(u)*mag(v)), -1, 1))
+}
+
+func clamp(x, minX, maxX float64) float64 {
+	if x < minX {
+		x = minX
+	} else if x > maxX {
+		x = maxX
+	}
+	return x
+}
+
+func dot(u, v [2]float64) float64 {
+	return u[0]*v[0] + u[1]*v[1]
+}
+
+func mag(u [2]float64) float64 {
+	return math.Hypot(u[0], u[1])
+}
