@@ -1,8 +1,6 @@
 package gdf
 
 import (
-
-	//"compress/zlib"
 	"io"
 
 	"github.com/klauspost/compress/zlib"

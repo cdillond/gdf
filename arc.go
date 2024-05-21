@@ -37,7 +37,18 @@ func (p *Point) rotate(theta float64) *Point {
 }
 
 // Returns the distance between a unit circle segment end point and its Bézier control point for a given theta.
-func kappa(theta float64) float64 { return 4. / 3. * math.Tan(theta/4.) }
+func kappa(theta float64) float64 {
+	// hardcoding these values saves a few cpu cycles...
+	switch theta {
+	case math.Pi / 4.:
+		return 0.265216489839544
+	case math.Pi / 2.:
+		return 0.5522847498307933
+	case math.Pi / 8.:
+		return 0.13132187114288565
+	}
+	return 4. / 3. * math.Tan(theta/4.)
+}
 
 // basic arc returns the arc from theta to theta+delta iff delta <= pi.
 func basicArc(theta, delta float64) (p1, q1, q2, p2 Point) {
