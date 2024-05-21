@@ -10,7 +10,7 @@ Example:
 import (
 	"image/png"
 
-	"github.com/cdillond/raster"
+	"github.com/cdillond/gdf/raster"
 )
 
 func main() {
