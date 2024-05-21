@@ -34,14 +34,12 @@ import (
 	"github.com/cdillond/gdf"
 )
 
-// A DecodeFunc reads an image fom the source reader and returns an image.Image and an error.
+// A DecodeFunc reads an image fom the source io.Reader and returns an image.Image and an error.
 // Each of the standard library's image package subdirectories contain functions that can
 // be used here, although alternative implementations are fine too.
 type DecodeFunc func(io.Reader) (image.Image, error)
 
 // A DecodeConfigFunc reads from a source io.Reader and returns an image.Config and an error.
-// Each of the standard library's image package subdirectories contain functions that can
-// be used here, although alternative implementations are fine too.
 type DecodeConfigFunc func(io.Reader) (image.Config, error)
 
 // A Decoder is a struct that can read gdf.XImages from source bytes. Most image
@@ -77,7 +75,7 @@ type rgba64 interface {
 }
 
 // The standard library's image package treats RGBA64 as a sort of lingua franca for images.
-// It's not ideal, especially for images with 8-bit depth, but it does the trick. Images with formats
+// It's not ideal, especially for images with 8-bit depth, but it does the trick for images with formats
 // that don't cleanly map to PDF image headers.
 func processImage(img rgba64, box image.Rectangle, cfg image.Config) (colors, alpha []byte, hasAlpha bool) {
 	var p, q int
