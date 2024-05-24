@@ -11,7 +11,7 @@ import (
 
 // HBSubset returns a func that can be used as a gdf.FontSubsetFunc on POSIX machines.
 // For this function to work, the HarfBuzz hb-subset tool must be installed. The HBSubset
-// func may handle edge cases that the Subset func does not. hb-subset has a mature,
+// func may handle edge cases that the TTFSubset func does not. hb-subset has a mature,
 // well-tested API and is capable of handling more font formats than the default function.
 // However, this approach requires a call to os.Exec and may not be suitable for all environments.
 func HBSubset(_ *sfnt.Font, src []byte, cutset map[rune]struct{}) ([]byte, error) {
