@@ -3,7 +3,7 @@ package gdf
 import (
 	"io"
 
-	"github.com/cdillond/gdf/ttf"
+	"github.com/cdillond/gdf/font"
 )
 
 type PDF struct {
@@ -62,21 +62,23 @@ func includeObj(pdf *PDF, o obj) {
 func includeChildren(pdf *PDF, o obj) error {
 	for _, child := range o.children() {
 		// finalize fonts
-		if fnt, ok := child.(*Font); ok {
-			calculateWidths(fnt)
-			if !fnt.noSubset {
-				fnt.noSubset = true
-				tmp := make(map[rune]struct{}, len(fnt.charset))
-				for key := range fnt.charset {
-					tmp[key] = struct{}{}
-				}
-				b, err := ttf.Subset(fnt.SFNT, fnt.srcb, tmp)
-				if err != nil {
-					return err // log.Println(err.Error())
-				} else {
-					fnt.source.buf = b
-				}
+		if f, ok := child.(*Font); ok {
+			calculateWidths(f)
+
+			tmp := make(map[rune]struct{}, len(f.charset))
+			for key := range f.charset {
+				tmp[key] = struct{}{}
 			}
+			if f.FontSubsetFunc == nil {
+				f.FontSubsetFunc = font.TTFSubset
+			}
+			b, err := f.FontSubsetFunc(f.SFNT, f.srcb, tmp)
+			if err != nil {
+				return err // log.Println(err.Error())
+			} else {
+				f.source.buf = b
+			}
+
 		}
 		includeObj(pdf, child)
 		if err := includeChildren(pdf, child); err != nil {

@@ -44,7 +44,7 @@ type DecodeConfigFunc func(io.Reader) (image.Config, error)
 
 // A Decoder is a struct that can read gdf.XImages from source bytes. Most image
 // codecs designed to be used with the standard library's image.RegisterFormat() function
-// export functions that are useable as DecodeFunc and DecodeConfigFuncs. A decoder can be
+// export functions that are useable as DecodeFunc and DecodeConfigFuncs. A Decoder can be
 // reused on multiple images of the same format, although it is not concurrency safe.
 // NOTE: For JPEG images, the gdf/jpeg package is more efficient.
 type Decoder struct {
@@ -98,8 +98,8 @@ func processImage(img rgba64, box image.Rectangle, cfg image.Config) (colors, al
 	return colors, alpha, hasAlpha
 }
 
-// Decode interprets b as data representing a PNG image. It decodes the image and returns
-// a gdf.XImage and an error. This function may not be ideal for all varieties of PNG.
+// Decode interprets b as data representing a raster image. It decodes the image and returns
+// a gdf.XImage and an error. This function may not be ideal for all images.
 // In particular, grayscale images with alpha channels are converted to their NRGBA equivalents,
 // which may have the effect of significantly increasing the image's encoding size. Applications
 // sensitive to performance may benefit from processing the image data separately and then

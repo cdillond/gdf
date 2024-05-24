@@ -102,13 +102,13 @@ func (c *ContentStream) ClosePathStroke() {
 }
 
 // Fill fills the path.
-func (c *ContentStream) Fill(wr FillRule) {
+func (c *ContentStream) Fill(fr FillRule) {
 	switch c.PathState {
 	case Building, Clipping:
 		c.PathState = NoPath
 		c.CurPt = *new(Point)
 		paintOp := op_f
-		if wr {
+		if fr {
 			paintOp = op_f_X
 		}
 		c.buf = append(c.buf, paintOp...)
@@ -116,13 +116,13 @@ func (c *ContentStream) Fill(wr FillRule) {
 }
 
 // FillStroke fills and then strokes the path.
-func (c *ContentStream) FillStroke(wr FillRule) {
+func (c *ContentStream) FillStroke(fr FillRule) {
 	switch c.PathState {
 	case Building, Clipping:
 		c.PathState = NoPath
 		c.CurPt = *new(Point)
 		paintOp := op_B
-		if wr {
+		if fr {
 			paintOp = op_B_X
 		}
 		c.buf = append(c.buf, paintOp...)
@@ -130,13 +130,13 @@ func (c *ContentStream) FillStroke(wr FillRule) {
 }
 
 // ClosePathFillStroke closes the path, fills the path, and then strokes the path; b.
-func (c *ContentStream) ClosePathFillStroke(wr FillRule) {
+func (c *ContentStream) ClosePathFillStroke(fr FillRule) {
 	switch c.PathState {
 	case Building, Clipping:
 		c.PathState = NoPath
 		c.CurPt = *new(Point)
 		paintOp := op_b
-		if wr {
+		if fr {
 			paintOp = op_b_X
 		}
 		c.buf = append(c.buf, paintOp...)

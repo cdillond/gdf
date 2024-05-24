@@ -52,16 +52,15 @@ func kappa(theta float64) float64 {
 
 // basic arc returns the arc from theta to theta+delta iff delta <= pi.
 func basicArc(theta, delta float64) (p1, q1, q2, p2 Point) {
-	p1 = unitCircle(0)
+	p1.X = 1
 	p2 = unitCircle(delta)
 
 	k := kappa(delta)
 
-	dx, dy := circleDxDy(0)
-	q1.X = p1.X - dx*k
-	q1.Y = p1.Y + dy*k
+	q1.X = 1
+	q1.Y = k
 
-	dx, dy = circleDxDy(delta)
+	dx, dy := circleDxDy(delta)
 	q2.X = p2.X - dx*k
 	q2.Y = p2.Y - dy*k
 

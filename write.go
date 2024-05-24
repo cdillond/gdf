@@ -87,7 +87,6 @@ func writeTrailer(p *PDF, w io.Writer) error {
 	buf = append(buf, "startxref\n"...)
 	buf = itobuf(p.xref[len(p.xref)-1], buf)
 	buf = append(buf, "\n%%EOF\n"...)
-
 	// now that everything has been appended to buf, we know the final file length.
 	h := md5.New()
 	h.Write(itob(p.n + len(buf)))
@@ -95,15 +94,13 @@ func writeTrailer(p *PDF, w io.Writer) error {
 
 	// Overwrite the 0 bytes.
 	i := bytes.IndexByte(buf, 0)
-	var n int
-	if i > -1 {
-		n = copy(buf[i:], idx)
-	}
-	i = bytes.IndexByte(buf[i+n:], 0)
 	if i > -1 {
 		copy(buf[i:], idx)
 	}
-
+	i = bytes.IndexByte(buf, 0)
+	if i > -1 {
+		copy(buf[i:], idx)
+	}
 	t, err = w.Write(buf)
 
 	p.n += t

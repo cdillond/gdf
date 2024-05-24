@@ -1,4 +1,4 @@
-package ttf
+package font
 
 import (
 	"bytes"
@@ -36,12 +36,12 @@ var pdfTables = [...]TableTag{
 	//1886352244, // post
 }
 
-// Subset is something of a poor man's subsetting function. It works - for TrueType fonts with 'glyf' tables only - by zeroing out
+// TTFSubset is something of a poor man's subsetting function. It works - for TrueType fonts with 'glyf' tables only - by zeroing out
 // the outlines of all glyphs not corresponding to or directly referenced by f's glyphs for the runes in cutset,
 // truncating f's glyf and loca tables, and then writing only the required tables to the returned byte slice. The final subset font
 // contains cmap, glyf, head, hhea, hmtx, loca, and maxp tables. The glyph indices are not affected. src should be a copy of the source
-// bytes for f, since the underlying bytes used by f should not be accessed while f is in use.
-func Subset(f *sfnt.Font, src []byte, cutset map[rune]struct{}) ([]byte, error) {
+// bytes for f.
+func TTFSubset(f *sfnt.Font, src []byte, cutset map[rune]struct{}) ([]byte, error) {
 	sbuf := new(sfnt.Buffer)
 	glyphs := make([]uint32, 0, 256)
 	glyphs = append(glyphs, 0) // must include .notdef
@@ -118,6 +118,7 @@ func Subset(f *sfnt.Font, src []byte, cutset map[rune]struct{}) ([]byte, error) 
 				}
 			}
 		}
+
 	}
 	// do these here instead of modifying the object that's being ranged over in the previous loop
 	for _, comp := range composites {
