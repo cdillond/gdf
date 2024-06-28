@@ -69,6 +69,7 @@ func includeChildren(pdf *PDF, o obj) error {
 			for key := range f.charset {
 				tmp[key] = struct{}{}
 			}
+
 			if f.FontSubsetFunc == nil {
 				f.FontSubsetFunc = font.TTFSubset
 			}

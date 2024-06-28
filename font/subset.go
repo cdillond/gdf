@@ -36,6 +36,10 @@ var pdfTables = [...]TableTag{
 	//1886352244, // post
 }
 
+// NoSubset can be used as a gdf.FontSubsetFunc when you wish to avoid subsetting a given
+// font. Beware: this can negatively impact the output PDF file size.
+func NoSubset(_ *sfnt.Font, src []byte, _ map[rune]struct{}) ([]byte, error) { return src, nil }
+
 // TTFSubset is something of a poor man's subsetting function. It works - for TrueType fonts with 'glyf' tables only - by zeroing out
 // the outlines of all glyphs not corresponding to or directly referenced by f's glyphs for the runes in cutset,
 // truncating f's glyf and loca tables, and then writing only the required tables to the returned byte slice. The final subset font

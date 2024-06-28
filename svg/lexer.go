@@ -213,6 +213,7 @@ func lexPathNum(l *lexer) stateFn {
 
 		}
 	}
+	l.undo()
 	l.out <- token{typ: num, text: l.src[i:l.n]}
 	return nil
 
@@ -251,6 +252,7 @@ exponent:
 			return lexSVGPathOp
 		}
 	}
+	l.undo()
 	l.out <- token{typ: num, text: l.src[i:l.n]}
 	return nil
 }
@@ -305,6 +307,7 @@ func lexPolyNum(l *lexer) stateFn {
 
 		}
 	}
+	l.undo()
 	l.out <- token{typ: num, text: l.src[i:l.n]}
 	return nil
 
@@ -343,6 +346,7 @@ exponent:
 			return nil
 		}
 	}
+	l.undo()
 	l.out <- token{typ: num, text: l.src[i:l.n]}
 	return nil
 }

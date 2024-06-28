@@ -7,11 +7,46 @@ import (
 )
 
 type svgRoot struct {
-	n              *node
-	xContent       gdf.XContent
-	Height, Width  float64
-	HScale, WScale float64
-	defs           map[string]*node
+	n             *node
+	xContent      gdf.XContent
+	Height, Width float64
+	ViewBox       gdf.Rect
+	defs          map[string]*node
+}
+
+func abs(f float64) float64 {
+	if f < 0 {
+		f = -f
+	}
+	return f
+}
+
+type node_type uint
+
+const (
+	svg_type node_type = iota
+	use_type
+	path_type
+	rect_type
+	polygon_type
+	circle_type
+	ellipse_type
+	moveto_type
+	lineto_type
+	curveto_type
+	close_path_type
+)
+
+type svg2 struct {
+	children  []svg2 // this gives us an idea of the number
+	transform int
+	node_type
+}
+
+func walk2(s svg2) {
+	for i := range s.children {
+		walk2(s.children[i])
+	}
 }
 
 /*
@@ -21,14 +56,17 @@ at (0, 0), and end at the bottom right of the page at (w, h). Any graphics drawn
 are not rendered. If both a viewBox and height and width parameters are provided, then the height
 and width are interpreted instead as scale values. The values of an SVG with a height and width of 5px
 but a viewBox of 0 0 10 10 are scaled down by 2.
+
+OK: let's redo that and make it simpler. The height and width are the values against which relative lengths
+are resolved. The viewBox determines the BoundingBox and the initial clip path. If no viewBox is provided,
+the height and width are used, starting at 0, 0. If no height and width are provided, the viewBox is used.
+It is in error for neither to be provided. The viewBox dimensions are always in pixels.
 */
 
 func Decode(r io.Reader) (gdf.XContent, error) {
 	out := svgRoot{
 		n:        new(node),
 		xContent: *gdf.NewXContent(nil, gdf.Rect{}),
-		HScale:   1,
-		WScale:   1,
 		defs:     make(map[string]*node),
 	}
 	out.xContent.Filter = gdf.NoFilter // for now...
@@ -45,45 +83,25 @@ func Decode(r io.Reader) (gdf.XContent, error) {
 		w = *out.n.self.width
 		out.Width = w
 	}
-	/*
-		if out.n.self.viewBox != nil {
-			out.Width = px * (out.n.self.viewBox[2] - out.n.self.viewBox[0])
-			/*if out.n.self.width == nil {
-				out.Width = w
-			}*/
-	//out.Height = px * (out.n.self.viewBox[3] - out.n.self.viewBox[1])
-	/*if out.n.self.height == nil {
-		out.Height = h
-	}*/
-
-	//}
-
-	//if h != 0 {
-	//	out.HScale = out.Height / h
-	//} else {
-	out.HScale = 1
-	//}
-	//if w != 0 {
-	//	out.WScale = out.Width / w
-	//} else {
-	out.WScale = 1
-	//}
-
 	if out.n.self.viewBox != nil {
-		out.xContent.Re2(gdf.Rect{
+		out.ViewBox = gdf.Rect{
 			LLX: out.n.self.viewBox[0],
 			LLY: out.n.self.viewBox[1],
 			URX: out.n.self.viewBox[2],
 			URY: out.n.self.viewBox[3],
-		})
-		out.xContent.Clip(gdf.EvenOdd)
+		}
+	} else {
+		out.ViewBox = gdf.NewRect(gdf.Point{0, 0}, gdf.Point{out.Width, out.Height})
+	}
+	if out.n.self.width == nil && out.n.self.height == nil {
+		out.Width = abs(out.ViewBox.URX - out.ViewBox.LLX)
+		out.Height = abs(out.ViewBox.URY - out.ViewBox.LLY)
+	}
 
-	} //else {
 	out.xContent.BBox.URY = out.Height
 	out.xContent.BBox.URX = out.Width
-	//}
 
-	walk(out.n, &out.xContent, out.HScale, out.WScale, out.defs)
+	walk(out.n, &out.xContent, 1, 1, out.defs)
 	return out.xContent, nil
 }
 

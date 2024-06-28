@@ -2,14 +2,21 @@ package svg
 
 import (
 	"strconv"
+	"strings"
+	"unicode"
 
 	"github.com/cdillond/gdf"
 )
 
 func parseColor(s string) (gdf.RGBColor, bool) {
+	if len(s) > 4 && s[:4] == "rgb(" {
+		return parseRGBFunc(s)
+	}
+
 	if rgb, ok := namedColors[s]; ok {
 		return rgb, ok
 	}
+
 	if len(s) < 1 {
 		return gdf.RGBColor{}, false
 	}
@@ -43,6 +50,36 @@ func parseColor(s string) (gdf.RGBColor, bool) {
 	rgb.B = float64(bInt) / 255.0
 	return rgb, true
 
+}
+
+func parseRGBFunc(s string) (out gdf.RGBColor, ok bool) {
+	s = s[4:]
+	s = strings.Trim(s, "()\x20\n\r\t\v\f\x85\xA0")
+	cols := strings.FieldsFunc(s, func(r rune) bool {
+		return unicode.IsSpace(r) || r == ','
+	})
+	// this is an ad-hoc parsing method which does not account for edge cases or alpha values, e.g. rgb(127 255 127 / 80% )
+	if len(cols) < 3 {
+		return out, ok
+	}
+	var rgbArr [3]float64
+	var err error
+	for i := 0; i < 3; i++ {
+		if cols[i] == "none" {
+			continue
+		} else if strings.Contains(cols[i], "%") {
+			rgbArr[i], err = strconv.ParseFloat(cols[i][:len(cols[i])-1], 64)
+			rgbArr[i] /= 100.
+		} else {
+			rgbArr[i], err = strconv.ParseFloat(cols[i], 64)
+			rgbArr[i] /= 255.
+		}
+		if err != nil {
+			return out, ok
+		}
+	}
+	out.R, out.G, out.B = rgbArr[0], rgbArr[1], rgbArr[2]
+	return out, true
 }
 
 var rgbBlack = gdf.RGBColor{1, 1, 1}
