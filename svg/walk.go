@@ -37,18 +37,6 @@ const (
 	close_path_type
 )
 
-type svg2 struct {
-	children  []svg2 // this gives us an idea of the number
-	transform int
-	node_type
-}
-
-func walk2(s svg2) {
-	for i := range s.children {
-		walk2(s.children[i])
-	}
-}
-
 /*
 SVGs may specify a height and width as well as a "viewBox". If no viewBox is given, it is assumed
 to be coincident with the height and width. That is, the coordinates begin (at the top left of the page)
@@ -63,6 +51,7 @@ the height and width are used, starting at 0, 0. If no height and width are prov
 It is in error for neither to be provided. The viewBox dimensions are always in pixels.
 */
 
+// Decode reads from r, which contains the SVG source data, and returns a gdf.XContent representation of the SVG and an error.
 func Decode(r io.Reader) (gdf.XContent, error) {
 	out := svgRoot{
 		n:        new(node),

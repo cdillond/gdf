@@ -21,58 +21,6 @@ type centerParams struct {
 	delta  float64 // angle of difference between the arc's start point and end point
 }
 
-func circle2(theta float64) (x, y float64) {
-	return math.Cos(theta), math.Sin(theta)
-}
-
-func translate(x1, y1, offsetX, offsetY float64) (x, y float64) {
-	return x1 + offsetX, y1 + offsetY
-}
-func scale(x1, y1, scaleX, scaleY float64) (x, y float64) {
-	return x1 * scaleX, y1 * scaleY
-}
-func rotate(x1, y1, phi float64) (x, y float64) {
-	sinPhi, cosPhi := math.Sincos(phi)
-	return x1 * cosPhi, y1 * sinPhi
-}
-
-func (c centerParams) transform(x1, y1 float64) (x, y float64) {
-	//x, y = rotate(x1, y1, c.phi)
-
-	x, y = scale(x1, y1, c.rx, c.ry)
-	x, y = translate(x, y, c.cx, c.cy)
-	return x, y
-}
-func (c centerParams) ellipse(theta float64) (x, y float64) {
-	x, y = circle2(theta)
-	return c.transform(x, y)
-}
-
-type segment struct {
-	startX, startY float64
-	x1, y1         float64 // control point 1
-	endX, endY     float64
-	x2, y2         float64 // control point 2
-}
-
-func fit(alpha float64) segment {
-	k := 0.551784777779014
-	if alpha < math.Pi/2 {
-		k = (4.0 / 3.0) * (math.Tan(alpha / 4.0))
-	}
-	sinAlpha, cosAlpha := math.Sincos(alpha)
-	return segment{
-		startX: 1.0,
-		startY: 0.0,
-		x1:     1.0,
-		y1:     k,
-		endX:   cosAlpha,
-		endY:   sinAlpha,
-		x2:     (cosAlpha + k*sinAlpha),
-		y2:     (sinAlpha - k*cosAlpha),
-	}
-}
-
 type vec struct {
 	i, j float64
 }

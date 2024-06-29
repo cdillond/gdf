@@ -1,3 +1,5 @@
+//go:build cgo && hbsubsetc
+
 package font
 
 /*
@@ -51,7 +53,8 @@ import (
 )
 
 // HBSubsetC can be used as a gdf.FontSubsetFunc. It calls functions in libharfbuzz and libharfbuzz-subset via CGo. In order
-// for this function to work, CGo must be enabled and HarfBuzz must be installed on your system.
+// for this function to work, CGo must be enabled, HarfBuzz must be installed on your system, and `hbsubsetc` must be passed
+// as a build tag to the Go compiler.
 func HBSubsetC(_ *sfnt.Font, src []byte, charset map[rune]struct{}) ([]byte, error) {
 	// convert runes to uint32_t chars readable by hb-subset
 	charset_u32 := make([]uint32, len(charset))
