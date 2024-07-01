@@ -47,7 +47,7 @@ type resourceDict struct {
 }
 
 func (r resourceDict) bytes() []byte {
-	if len(r.Fonts)+len(r.XForms)+len(r.Images) == 0 {
+	if len(r.Fonts)+len(r.XForms)+len(r.Images)+len(r.ExtGState) == 0 {
 		return []byte("<<>>")
 	}
 

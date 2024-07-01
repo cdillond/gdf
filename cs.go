@@ -14,7 +14,6 @@ type ContentStream struct {
 	stream
 	GS
 	*TextObj
-	//TODO: ExtGState
 	gSStack   []GS         // Graphics state stack
 	stack     []stackState // used for recording the order of calls to QSave/QRestore and BeginText/EndText
 	resources resourceDict
