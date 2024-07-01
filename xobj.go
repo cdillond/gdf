@@ -82,7 +82,7 @@ func (x *XContent) Bytes() []byte {
 func (x *XContent) mark(i int) { x.refnum = i }
 func (x *XContent) id() int    { return x.refnum }
 func (x *XContent) children() []obj {
-	out := make([]obj, 0, len(x.resources.Fonts)+len(x.resources.XForms)+len(x.resources.Images))
+	out := make([]obj, 0, len(x.resources.Fonts)+len(x.resources.XForms)+len(x.resources.Images)+len(x.resources.ExtGState))
 	for i := range x.resources.Fonts {
 		out = append(out, x.resources.Fonts[i])
 	}
@@ -91,6 +91,9 @@ func (x *XContent) children() []obj {
 	}
 	for i := range x.resources.Images {
 		out = append(out, x.resources.Images[i])
+	}
+	for i := range x.resources.ExtGState {
+		out = append(out, x.resources.ExtGState[i])
 	}
 	return out
 }

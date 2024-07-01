@@ -40,7 +40,7 @@ func (c *ContentStream) SetColorStroke(cl Color) {
 	default:
 		return
 	}
-	c.NColor = cl
+	c.SColor = cl
 }
 
 // Sets c's nonstroking color (NColor) to cl and sets its NColorSpace to cl's ColorSpace.
