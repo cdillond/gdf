@@ -195,8 +195,8 @@ func resolvePathCmds(data []svgCmd) []pdfPathCmd {
 				rcmd.args[0],
 				rcmd.args[1],
 				gdf.Deg * rcmd.args[2],
-				rcmd.args[3],
-				rcmd.args[4],
+				rcmd.args[3] == 1,
+				rcmd.args[4] == 1,
 				cur.X + rcmd.args[5],
 				cur.Y + rcmd.args[6],
 			}
@@ -220,8 +220,8 @@ func resolvePathCmds(data []svgCmd) []pdfPathCmd {
 				rx:        rcmd.args[0],
 				ry:        rcmd.args[1],
 				phi:       gdf.Deg * rcmd.args[2],
-				largeFlag: rcmd.args[3],
-				sweepFlag: rcmd.args[4],
+				largeFlag: rcmd.args[3] == 1,
+				sweepFlag: rcmd.args[4] == 1,
 				x2:        rcmd.args[5],
 				y2:        rcmd.args[6],
 			}

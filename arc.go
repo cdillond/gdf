@@ -111,7 +111,7 @@ func (c *ContentStream) Arc2(cx, cy, rx, ry, theta, delta, phi, step float64) {
 			q1.scale(rx, ry).rotate(phi).translate(cx, cy)
 			q2.scale(rx, ry).rotate(phi).translate(cx, cy)
 			p2.scale(rx, ry).rotate(phi).translate(cx, cy)
-			if beta == 0 {
+			if beta == 0 && !equiv(c.CurPt, p1) {
 				c.MoveTo(p1.X, p1.Y)
 			}
 			c.CubicBezier1(q1.X, q1.Y, q2.X, q2.Y, p2.X, p2.Y)
@@ -125,7 +125,7 @@ func (c *ContentStream) Arc2(cx, cy, rx, ry, theta, delta, phi, step float64) {
 			q1.scale(rx, ry).rotate(phi).translate(cx, cy)
 			q2.scale(rx, ry).rotate(phi).translate(cx, cy)
 			p2.scale(rx, ry).rotate(phi).translate(cx, cy)
-			if beta == 0 {
+			if beta == 0 && !equiv(c.CurPt, p1) {
 				c.MoveTo(p1.X, p1.Y)
 			}
 			c.CubicBezier1(q1.X, q1.Y, q2.X, q2.Y, p2.X, p2.Y)

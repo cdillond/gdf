@@ -8,8 +8,8 @@ type endParams struct {
 	x1, y1    float64 // implicit x and y coordinates of the start point
 	rx, ry    float64 // size of the x and y radii
 	phi       float64 // x-axis rotation angle
-	largeFlag float64 // determines the size of the arc angle
-	sweepFlag float64 // determines the drawing direction
+	largeFlag bool    // determines the size of the arc angle
+	sweepFlag bool    // determines the drawing direction
 	x2, y2    float64 // x and y coordinates of the end point
 }
 
@@ -121,7 +121,7 @@ func center(ep endParams) centerParams {
 	}
 	delta := math.Abs(angle(vt, u))
 	delta = math.Mod(delta, 2*math.Pi)
-	if ep.sweepFlag == 0 {
+	if !ep.sweepFlag {
 		delta = -delta
 	}
 	out.delta = delta
