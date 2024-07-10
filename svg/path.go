@@ -1,46 +1,272 @@
 package svg
 
 import (
+	"strconv"
+
 	"github.com/cdillond/gdf"
 )
 
-type pdfPathCmd struct {
-	op   pdfPathOp
-	args []gdf.Point
-}
+var cmds = [...]byte{'A', 'a', 'C', 'c', 'H', 'h', 'L', 'l', 'M', 'm', 'Q', 'q', 'S', 's', 'T', 't', 'V', 'v', 'Z', 'z'}
 
-type pdfPathOp uint
-
-const (
-	moveTo pdfPathOp = iota
-	lineTo
-	curveTo
-	closePath
-	circle
-	ellipse
-	rect
-	arc
-	badpathOp
-)
-
-func (p pdfPathOp) isValid() bool {
-	return p < badpathOp
-}
-
-func svgPathOp2pdfPathOp(p svgPathOp) pdfPathOp {
-	switch p {
-	case mAbs, mRel:
-		return moveTo
-	case lAbs, lRel, hAbs, hRel, vAbs, vRel:
-		return lineTo
-	case zAbs, zRel:
-		return closePath
-	case cAbs, cRel, sAbs, sRel, qAbs, qRel, tAbs, tRel:
-		return curveTo
-	case aAbs, aRel:
-		return arc
+func isCmd(c byte) bool {
+	for i := 0; i < len(cmds); i++ {
+		if c == cmds[i] {
+			return true
+		}
 	}
-	return badpathOp
+	return false
+}
+
+func pf(s string) float64 {
+	f, _ := strconv.ParseFloat(s, 64)
+	return f
+}
+
+func parsePath(cs *gdf.ContentStream, style style, s string, h float64, m gdf.Matrix) {
+	// let's begin with a simple path...
+	var buf buf
+	buf.b = []byte(s)
+	if !style.stroke.isSet {
+		style.stroke.isNone = true
+	}
+	var cur gdf.Point
+	cur.X = style.xOff
+	cur.Y = style.yOff
+	var c, op byte
+	var lastOp byte      // for S, s, T, and t cmds
+	var lastCP gdf.Point // for S, s, T, and t cmds
+	ok := true
+	for {
+		buf.skipWSPComma()
+		c, ok = buf.peek()
+		if !ok {
+			break
+		}
+		if isCmd(c) {
+			buf.skip()
+			op = c
+		}
+		switch op {
+		case 'A', 'a':
+			rxs, rys := buf.ConsumeNumber(), buf.ConsumeNumber()
+			angles := buf.ConsumeNumber()
+			buf.skipWSPComma()
+			isLong, _ := buf.next()
+			buf.skipWSPComma()
+			isClockwise, _ := buf.next()
+			xs, ys := buf.ConsumeNumber(), buf.ConsumeNumber()
+
+			rx := pf(rxs)
+			ry := pf(rys)
+			angle := pf(angles)
+			x := pf(xs)
+			y := pf(ys)
+
+			if op == 'a' {
+				x += cur.X
+				y += cur.Y
+			} else {
+				x += style.xOff
+				y += style.yOff
+			}
+
+			a := gdf.SVGArcParams{
+				X1:          cur.X,
+				Y1:          cur.Y,
+				Rx:          rx,
+				Ry:          ry,
+				Phi:         angle * gdf.Deg,
+				IsLong:      isLong == '1',
+				IsClockwise: isClockwise == '1',
+				X2:          x,
+				Y2:          y,
+			}
+
+			cur.X, cur.Y = x, y
+			cs.SVGArc(a, h, m)
+			//cp := center(ep, h, m)
+			//cs.ArcSVG(cp.cx, cp.cy, cp.rx, cp.ry, cp.theta, cp.delta, cp.phi, math.Pi/4., h, m)
+
+		case 'S', 's':
+			x2s, y2s := buf.ConsumeNumber(), buf.ConsumeNumber()
+			x3s, y3s := buf.ConsumeNumber(), buf.ConsumeNumber()
+			x2 := pf(x2s)
+			y2 := pf(y2s)
+			x3 := pf(x3s)
+			y3 := pf(y3s)
+
+			var x1, y1 float64
+			if lastOp == 'C' || lastOp == 'c' || lastOp == 'S' || lastOp == 's' {
+				x1 = 2*cur.X - lastCP.X
+				y1 = 2*cur.Y - lastCP.Y
+			} else {
+				x1, y1 = cur.X, cur.Y
+			}
+			if op == 's' {
+				x2 += cur.X
+				x3 += cur.X
+				y2 += cur.Y
+				y3 += cur.Y
+			} else {
+				x2 += style.xOff
+				x3 += style.xOff
+				y2 += style.yOff
+				y3 += style.yOff
+			}
+			cur.X, cur.Y = x3, y3
+			x1, y1 = tf(x1, y1, h, m)
+			x2, y2 = tf(x2, y2, h, m)
+			x3, y3 = tf(x3, y3, h, m)
+			cs.CubicBezier1(x1, y1, x2, y2, x3, y3)
+
+		case 'C', 'c':
+			x1s, y1s := buf.ConsumeNumber(), buf.ConsumeNumber()
+			x2s, y2s := buf.ConsumeNumber(), buf.ConsumeNumber()
+			x3s, y3s := buf.ConsumeNumber(), buf.ConsumeNumber()
+			x1 := pf(x1s)
+			y1 := pf(y1s)
+			x2 := pf(x2s)
+			y2 := pf(y2s)
+			x3 := pf(x3s)
+			y3 := pf(y3s)
+
+			if op == 'c' {
+				x1 += cur.X
+				x2 += cur.X
+				x3 += cur.X
+				y1 += cur.Y
+				y2 += cur.Y
+				y3 += cur.Y
+			} else {
+				x1 += style.xOff
+				x2 += style.xOff
+				x3 += style.xOff
+				y1 += style.yOff
+				y2 += style.yOff
+				y3 += style.yOff
+			}
+			lastCP.X = x2
+			lastCP.Y = y2
+			cur.X, cur.Y = x3, y3
+			x1, y1 = tf(x1, y1, h, m)
+			x2, y2 = tf(x2, y2, h, m)
+			x3, y3 = tf(x3, y3, h, m)
+			cs.CubicBezier1(x1, y1, x2, y2, x3, y3)
+		case 'H', 'h':
+			xs := buf.ConsumeNumber()
+			x := pf(xs)
+			if op == 'h' {
+				x += cur.X
+			} else {
+				x += style.xOff
+			}
+			xf, y := tf(x, cur.Y, h, m)
+			cs.LineTo(xf, y)
+			cur.X = x
+		case 'V', 'v':
+			ys := buf.ConsumeNumber()
+			y := pf(ys)
+			if op == 'v' {
+				y += cur.Y
+			} else {
+				y += style.yOff
+			}
+			x, yf := tf(cur.X, y, h, m)
+			cs.LineTo(x, yf)
+			cur.Y = y
+		case 'T', 't':
+			x3s, y3s := buf.ConsumeNumber(), buf.ConsumeNumber()
+			x3 := pf(x3s)
+			y3 := pf(y3s)
+
+			var x1, y1 float64
+			if lastOp == 'Q' || lastOp == 'q' || lastOp == 'T' || lastOp == 't' {
+				x1 = 2*cur.X - lastCP.X
+				y1 = 2*cur.Y - lastCP.Y
+			} else {
+				x1, y1 = cur.X, cur.Y
+			}
+
+			if op == 't' {
+				x3 += cur.X
+				y3 += cur.Y
+			} else {
+				x3 += style.xOff
+				y3 += style.yOff
+			}
+			lastCP.X = x1
+			lastCP.Y = y1
+
+			tcurx, tcury := tf(cur.X, cur.Y, h, m)
+			tx1, ty1 := tf(x1, y1, h, m)
+			tx3, ty3 := tf(x3, y3, h, m)
+			cubic := quadraticToCubic(gdf.Point{tcurx, tcury}, gdf.Point{tx1, ty1}, gdf.Point{tx3, ty3})
+			cur.X, cur.Y = x3, y3
+			cs.CubicBezier1(cubic[1].X, cubic[1].Y, cubic[2].X, cubic[2].Y, tx3, ty3)
+
+		case 'Q', 'q':
+			x1s, y1s := buf.ConsumeNumber(), buf.ConsumeNumber()
+			x3s, y3s := buf.ConsumeNumber(), buf.ConsumeNumber()
+			x1 := pf(x1s)
+			y1 := pf(y1s)
+			x3 := pf(x3s)
+			y3 := pf(y3s)
+
+			if op == 'q' {
+				x1 += cur.X
+				x3 += cur.X
+				y1 += cur.Y
+				y3 += cur.Y
+			} else {
+				x1 += style.xOff
+				x3 += style.xOff
+				y1 += style.yOff
+				y3 += style.yOff
+			}
+			lastCP.X = x1
+			lastCP.Y = y1
+
+			tcurx, tcury := tf(cur.X, cur.Y, h, m)
+			tx1, ty1 := tf(x1, y1, h, m)
+			tx3, ty3 := tf(x3, y3, h, m)
+			cubic := quadraticToCubic(gdf.Point{tcurx, tcury}, gdf.Point{tx1, ty1}, gdf.Point{tx3, ty3})
+			cur.X, cur.Y = x3, y3
+			cs.CubicBezier1(cubic[1].X, cubic[1].Y, cubic[2].X, cubic[2].Y, tx3, ty3)
+
+		case 'M', 'm':
+			xs, ys := buf.ConsumeNumber(), buf.ConsumeNumber()
+			x := pf(xs)
+			y := pf(ys)
+			if op == 'm' {
+				x += cur.X
+				y += cur.Y
+			} else {
+				x += style.xOff
+				y += style.yOff
+			}
+			cur.X, cur.Y = x, y
+			x, y = tf(x, y, h, m)
+			cs.MoveTo(x, y)
+		case 'L', 'l':
+			xs, ys := buf.ConsumeNumber(), buf.ConsumeNumber()
+			x := pf(xs)
+			y := pf(ys)
+			if op == 'l' {
+				x += cur.X
+				y += cur.Y
+			} else {
+				x += style.xOff
+				y += style.yOff
+			}
+			cur.X, cur.Y = x, y
+			x, y = tf(x, y, h, m)
+			cs.LineTo(x, y)
+		case 'Z', 'z':
+			cs.ClosePath()
+		}
+		lastOp = op
+	}
+	Paint(cs, false, style)
 }
 
 // Converts a Quadratic Bezier Curve to a Cubic Bezier Curve.
@@ -53,193 +279,14 @@ func quadraticToCubic(start, P1, dst gdf.Point) [4]gdf.Point {
 	// control point 1
 	out[1].X = 2. / 3. * (P1.X - start.X)
 	out[1].Y = 2. / 3. * (P1.Y - start.Y)
-	out[1].X += P1.X
-	out[1].Y += P1.Y
+	out[1].X += start.X
+	out[1].Y += start.Y
 
 	// control point 2
 	out[2].X = 2. / 3. * (P1.X - dst.X)
 	out[2].Y = 2. / 3. * (P1.Y - dst.Y)
 	out[2].X += dst.X
 	out[2].Y += dst.Y
-
-	return out
-}
-
-func resolvePathCmds(data []svgCmd) []pdfPathCmd {
-	var cur gdf.Point
-	var ctrlPt gdf.Point
-	var out []pdfPathCmd
-
-	for _, rcmd := range data {
-		switch rcmd.op {
-		case zAbs, zRel:
-			out = append(out, pdfPathCmd{op: svgPathOp2pdfPathOp(rcmd.op)})
-		case hAbs, hRel, vAbs, vRel:
-			switch rcmd.op {
-			case hAbs:
-				cur.X = rcmd.args[0]
-			case hRel:
-				cur.X += rcmd.args[0]
-			case vAbs:
-				cur.Y = rcmd.args[0]
-			case vRel:
-				cur.Y += rcmd.args[0]
-			}
-			out = append(out, pdfPathCmd{
-				op:   svgPathOp2pdfPathOp(rcmd.op),
-				args: []gdf.Point{cur},
-			})
-		case mAbs, lAbs, mRel, lRel:
-			for n := 0; n < len(rcmd.args); n += 2 {
-				switch rcmd.op {
-				case mAbs, lAbs:
-					cur = gdf.Point{X: rcmd.args[n+0], Y: rcmd.args[n+1]}
-					if n > 0 {
-						rcmd.op = lAbs
-					}
-				case mRel, lRel:
-					cur.X += rcmd.args[n+0]
-					cur.Y += rcmd.args[n+1]
-					if n > 0 {
-						rcmd.op = lRel
-					}
-				}
-				out = append(out, pdfPathCmd{
-					op:   svgPathOp2pdfPathOp(rcmd.op),
-					args: []gdf.Point{cur},
-				})
-			}
-		case cAbs, cRel, sAbs, sRel:
-			for n := 0; n < len(rcmd.args); n += 6 {
-				var pts []gdf.Point
-				if ctrlPt.X == 0 && ctrlPt.Y == 0 {
-					ctrlPt = cur
-				}
-				switch rcmd.op {
-				case sAbs:
-					ctrlPt.X = cur.X + (cur.X - ctrlPt.X)
-					ctrlPt.Y = cur.Y + (cur.Y - ctrlPt.Y)
-					pts = []gdf.Point{
-						ctrlPt,
-						{X: rcmd.args[n+0], Y: rcmd.args[n+1]},
-						{X: rcmd.args[n+2], Y: rcmd.args[n+3]},
-					}
-					ctrlPt = gdf.Point{X: rcmd.args[n+0], Y: rcmd.args[n+1]}
-					cur = gdf.Point{X: rcmd.args[n+2], Y: rcmd.args[n+3]}
-				case sRel:
-					ctrlPt.X = cur.X + (cur.X - ctrlPt.X)
-					ctrlPt.Y = cur.Y + (cur.Y - ctrlPt.Y)
-					pts = []gdf.Point{
-						ctrlPt,
-						{X: cur.X + rcmd.args[n+0], Y: cur.Y + rcmd.args[n+1]},
-						{X: cur.X + rcmd.args[n+2], Y: cur.Y + rcmd.args[n+3]},
-					}
-					ctrlPt = gdf.Point{X: cur.X + rcmd.args[n+0], Y: cur.Y + rcmd.args[n+1]}
-					cur = gdf.Point{X: cur.X + rcmd.args[n+2], Y: cur.Y + rcmd.args[n+3]}
-
-				case cAbs:
-					pts = []gdf.Point{
-						{X: rcmd.args[n+0], Y: rcmd.args[n+1]},
-						{X: rcmd.args[n+2], Y: rcmd.args[n+3]},
-						{X: rcmd.args[n+4], Y: rcmd.args[n+5]},
-					}
-					ctrlPt = gdf.Point{X: rcmd.args[n+2], Y: rcmd.args[n+3]}
-					cur = gdf.Point{X: rcmd.args[n+4], Y: rcmd.args[n+5]}
-				case cRel:
-					pts = []gdf.Point{
-						{X: cur.X + rcmd.args[n+0], Y: cur.Y + rcmd.args[n+1]},
-						{X: cur.X + rcmd.args[n+2], Y: cur.Y + rcmd.args[n+3]},
-						{X: cur.X + rcmd.args[n+4], Y: cur.Y + rcmd.args[n+5]},
-					}
-					ctrlPt = gdf.Point{X: cur.X + rcmd.args[n+2], Y: cur.Y + rcmd.args[n+3]}
-					cur = gdf.Point{X: cur.X + rcmd.args[n+4], Y: cur.Y + rcmd.args[n+5]}
-				}
-				out = append(out, pdfPathCmd{
-					op:   svgPathOp2pdfPathOp(rcmd.op),
-					args: pts,
-				})
-			}
-		case tAbs, tRel, qAbs, qRel:
-			var endPt gdf.Point
-			switch rcmd.op {
-			case tAbs:
-				ctrlPt.X += (cur.X - ctrlPt.X)
-				ctrlPt.Y += (cur.Y - ctrlPt.Y)
-				endPt.X = rcmd.args[0]
-				endPt.Y = rcmd.args[1]
-			case tRel:
-				ctrlPt.X += (cur.X - ctrlPt.X)
-				ctrlPt.Y += (cur.Y - ctrlPt.Y)
-				endPt.X = cur.X + rcmd.args[0]
-				endPt.Y = cur.Y + rcmd.args[1]
-			case qAbs:
-				ctrlPt.X = rcmd.args[0]
-				ctrlPt.Y = rcmd.args[1]
-				endPt.X = rcmd.args[2]
-				endPt.Y = rcmd.args[3]
-			case qRel:
-				ctrlPt.X = cur.X + rcmd.args[0]
-				ctrlPt.Y = cur.Y + rcmd.args[1]
-				endPt.X = cur.X + rcmd.args[2]
-				endPt.Y = cur.Y + rcmd.args[3]
-			}
-			cubic := quadraticToCubic(cur, ctrlPt, endPt)
-			cur = endPt
-			out = append(out, pdfPathCmd{
-				op:   svgPathOp2pdfPathOp(rcmd.op),
-				args: cubic[:],
-			})
-		case aRel:
-			ep := endParams{
-				cur.X, cur.Y,
-				rcmd.args[0],
-				rcmd.args[1],
-				gdf.Deg * rcmd.args[2],
-				rcmd.args[3] == 1,
-				rcmd.args[4] == 1,
-				cur.X + rcmd.args[5],
-				cur.Y + rcmd.args[6],
-			}
-			cur.X += rcmd.args[5]
-			cur.Y += rcmd.args[6]
-			c := center(ep)
-			out = append(out, pdfPathCmd{
-				op: svgPathOp2pdfPathOp(rcmd.op),
-				args: []gdf.Point{
-					{c.cx, c.cy},
-					{c.rx, c.ry},
-					{c.theta, c.delta},
-					{X: c.phi},
-				},
-			},
-			)
-
-		case aAbs:
-			ep := endParams{
-				x1: cur.X, y1: cur.Y,
-				rx:        rcmd.args[0],
-				ry:        rcmd.args[1],
-				phi:       gdf.Deg * rcmd.args[2],
-				largeFlag: rcmd.args[3] == 1,
-				sweepFlag: rcmd.args[4] == 1,
-				x2:        rcmd.args[5],
-				y2:        rcmd.args[6],
-			}
-			cur.X = rcmd.args[5]
-			cur.Y = rcmd.args[6]
-			c := center(ep)
-			out = append(out, pdfPathCmd{
-				op: svgPathOp2pdfPathOp(rcmd.op),
-				args: []gdf.Point{
-					{c.cx, c.cy},
-					{c.rx, c.ry},
-					{c.theta, c.delta},
-					{X: c.phi},
-				},
-			},
-			)
-		}
-	}
 
 	return out
 }

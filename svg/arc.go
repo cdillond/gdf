@@ -2,7 +2,13 @@ package svg
 
 import (
 	"math"
+
+	"github.com/cdillond/gdf"
 )
+
+type pt struct {
+	x, y float64
+}
 
 type endParams struct {
 	x1, y1    float64 // implicit x and y coordinates of the start point
@@ -49,11 +55,17 @@ func clamp(f, minF, maxF float64) float64 {
 
 // angle returns the angle, in radians, between u and v.
 func angle(u, v vec) float64 {
-	return math.Acos(clamp(dot(u, v)/(mag(u)*mag(v)), -1, 1))
+	sign := 1.0
+	if u.i*v.j-u.j*v.i < 0 {
+		sign = -sign
+	}
+	return sign * math.Acos(clamp(dot(u, v)/(mag(u)*mag(v)), -1, 1))
 }
 
 // center returns the center parameterization parameters of the elliptic arc described by the arguments. x1 and y1 are the coordinates of the current point.
-func center(ep endParams) centerParams {
+func center(ep endParams, h float64, m gdf.Matrix) centerParams {
+	const twoPi = 2 * math.Pi
+
 	var out centerParams
 	// the p, s, and t suffixes are used here to denote 'prime', 'squared', and 'temporary' respectively.
 
@@ -87,8 +99,8 @@ func center(ep endParams) centerParams {
 	out.ry = ry
 
 	// Step 2: Compute (cx′, cy′)
-	num := rxs*rys - rxs*y1ps - rys*x1ps
-	den := rxs*y1ps + rys*x1ps
+	num := math.Abs(rxs*rys - rxs*y1ps - rys*x1ps)
+	den := math.Abs(rxs*y1ps + rys*x1ps)
 	coeff := math.Sqrt(num / den)
 	if ep.largeFlag == ep.sweepFlag {
 		coeff = -coeff
@@ -119,8 +131,13 @@ func center(ep endParams) centerParams {
 		i: (-x1p - cxp) / rx,
 		j: (-y1p - cyp) / ry,
 	}
-	delta := math.Abs(angle(vt, u))
-	delta = math.Mod(delta, 2*math.Pi)
+
+	delta := math.Mod(math.Abs(angle(vt, u)), 2*math.Pi)
+	if delta < math.Pi && ep.largeFlag {
+		delta = (twoPi) - delta
+	} else if delta > math.Pi && (!ep.largeFlag) {
+		delta = (twoPi) - delta
+	}
 	if !ep.sweepFlag {
 		delta = -delta
 	}
