@@ -2,7 +2,6 @@ package svg
 
 import (
 	"encoding/xml"
-	"fmt"
 	"strconv"
 
 	"github.com/cdillond/gdf"
@@ -374,7 +373,6 @@ func (p polygon) Draw(cs *gdf.ContentStream, h float64) {
 	for fs := b.ConsumeNumber(); fs != ""; fs = b.ConsumeNumber() {
 		f64, err := strconv.ParseFloat(fs, 64)
 		if err != nil {
-			fmt.Println(err.Error())
 			break
 		}
 		points = append(points, f64)
@@ -468,7 +466,6 @@ func (p polyline) Draw(cs *gdf.ContentStream, h float64) {
 	for fs := b.ConsumeNumber(); fs != ""; fs = b.ConsumeNumber() {
 		f64, err := strconv.ParseFloat(fs, 64)
 		if err != nil {
-			fmt.Println(err.Error())
 			break
 		}
 		points = append(points, f64)
@@ -567,7 +564,6 @@ func (r rect) Draw(cs *gdf.ContentStream, h float64) {
 	x, y = tf(x+r.xOff, y+r.yOff, h, r.Matrix)
 	cs.Re(x, y, width, height)
 	Paint(cs, false, r.style) // path is already closed
-	fmt.Println(cs)
 
 }
 func (r rect) Children() []element { return nil }

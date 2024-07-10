@@ -2,7 +2,6 @@ package svg
 
 import (
 	"encoding/xml"
-	"fmt"
 
 	"github.com/cdillond/gdf"
 )
@@ -176,7 +175,6 @@ func (u use) Draw(cs *gdf.ContentStream, h float64) {}
 func (u use) Children() []element {
 	var e element
 	if u.href != "" {
-		fmt.Println(u.href, u.href[1:])
 		e = defmap[u.href[1:]]
 	}
 	if e == nil {
@@ -237,7 +235,6 @@ func (u *use) Parse(attrs []xml.Attr) {
 			u.y = a.Value
 		case "href":
 			u.href = a.Value
-			fmt.Println(u)
 		}
 	}
 }

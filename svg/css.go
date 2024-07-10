@@ -66,7 +66,6 @@ func (s *style) parseCSS(src string) {
 	for _, pair := range pairs {
 		before, after, ok := strings.Cut(pair, ":")
 		if !ok {
-			fmt.Println("not ok", pair)
 			continue
 		}
 		before = strings.TrimSpace(before)

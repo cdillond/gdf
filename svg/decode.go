@@ -165,7 +165,6 @@ func Paint(cs *gdf.ContentStream, closePath bool, s style) {
 }
 
 func Render(root element, cs *gdf.ContentStream, h float64) {
-	//fmt.Println(reflect.TypeOf(root), root)
 	switch root.Category() {
 	case CAT_STRUCTRUAL:
 		for _, child := range root.Children() {
@@ -263,9 +262,7 @@ func Decode(r io.Reader) (gdf.XContent, error) {
 				c.Parse(val.Attr)
 				c.style = style
 				if id != "" {
-					fmt.Println("hey", id)
 					defmap[id] = c
-					fmt.Println(defmap)
 				}
 				root.element.AddChild(c)
 			case "ellipse":
@@ -317,7 +314,6 @@ func Decode(r io.Reader) (gdf.XContent, error) {
 				}
 				root.element.AddChild(r)
 			default:
-				//fmt.Println(val.Name)
 			}
 
 		case xml.EndElement:
