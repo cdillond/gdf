@@ -4,12 +4,21 @@ import (
 	"math"
 )
 
+// equiv returns true iff p1 and p2, rounded to the nearest 1/1000th of a point, are equal.
 func equiv(p1, p2 Point) bool {
-	p1.X = math.Round(p1.X*1_000) / 1_000
-	p1.Y = math.Round(p1.Y*1_000) / 1_000
-	p2.X = math.Round(p2.X*1_000) / 1_000
-	p2.Y = math.Round(p2.Y*1_000) / 1_000
+	// no need to divide, since the rounded values won't be used for drawing operations.
+	p1.X = math.Round(p1.X * 1_000)
+	p1.Y = math.Round(p1.Y * 1_000)
+	p2.X = math.Round(p2.X * 1_000)
+	p2.Y = math.Round(p2.Y * 1_000)
 	return p1 == p2
+}
+
+// svg2pdf transforms p from the SVG coordinate space to the PDF coordinate space.
+func (p *Point) svg2pdf(h float64, m Matrix) *Point {
+	*p = Transform(*p, m)
+	p.Y = h - p.Y
+	return p
 }
 
 // SVGArcParams represents the "endpoint parameterization" of an SVG arc subpath.
@@ -25,7 +34,7 @@ type SVGArcParams struct {
 // SVGArc draws an arc, represented in the SVG "endpoint parameterization" form, to c. The h and m
 // parameters are the SVG's height and transformation matrix. This function should be avoided by most users.
 func (c *ContentStream) SVGArc(s SVGArcParams, h float64, m Matrix) {
-	cp := center(s, h, m)
+	cp := center(s)
 
 	const step = math.Pi / 4.
 	var tau = min(math.Abs(step), math.Pi)
@@ -36,10 +45,10 @@ func (c *ContentStream) SVGArc(s SVGArcParams, h float64, m Matrix) {
 	if cp.delta > 0 {
 		for beta := 0.0; beta < cp.delta; beta += tau {
 			p1, q1, q2, p2 = basicArc(cp.theta, min(tau, cp.delta-beta))
-			p1.scale(cp.rx, cp.ry).rotate(cp.phi).translate(cp.cx, cp.cy).svgpdf(h, m)
-			q1.scale(cp.rx, cp.ry).rotate(cp.phi).translate(cp.cx, cp.cy).svgpdf(h, m)
-			q2.scale(cp.rx, cp.ry).rotate(cp.phi).translate(cp.cx, cp.cy).svgpdf(h, m)
-			p2.scale(cp.rx, cp.ry).rotate(cp.phi).translate(cp.cx, cp.cy).svgpdf(h, m)
+			p1.scale(cp.rx, cp.ry).rotate(cp.phi).translate(cp.cx, cp.cy).svg2pdf(h, m)
+			q1.scale(cp.rx, cp.ry).rotate(cp.phi).translate(cp.cx, cp.cy).svg2pdf(h, m)
+			q2.scale(cp.rx, cp.ry).rotate(cp.phi).translate(cp.cx, cp.cy).svg2pdf(h, m)
+			p2.scale(cp.rx, cp.ry).rotate(cp.phi).translate(cp.cx, cp.cy).svg2pdf(h, m)
 			if beta == 0 && !equiv(c.CurPt, p1) {
 				c.MoveTo(p1.X, p1.Y)
 			}
@@ -50,10 +59,10 @@ func (c *ContentStream) SVGArc(s SVGArcParams, h float64, m Matrix) {
 	} else if cp.delta < 0 {
 		for beta := 0.0; beta > cp.delta; beta -= tau {
 			p1, q1, q2, p2 := basicArc(cp.theta, max(-tau, cp.delta-beta))
-			p1.scale(cp.rx, cp.ry).rotate(cp.phi).translate(cp.cx, cp.cy).svgpdf(h, m)
-			q1.scale(cp.rx, cp.ry).rotate(cp.phi).translate(cp.cx, cp.cy).svgpdf(h, m)
-			q2.scale(cp.rx, cp.ry).rotate(cp.phi).translate(cp.cx, cp.cy).svgpdf(h, m)
-			p2.scale(cp.rx, cp.ry).rotate(cp.phi).translate(cp.cx, cp.cy).svgpdf(h, m)
+			p1.scale(cp.rx, cp.ry).rotate(cp.phi).translate(cp.cx, cp.cy).svg2pdf(h, m)
+			q1.scale(cp.rx, cp.ry).rotate(cp.phi).translate(cp.cx, cp.cy).svg2pdf(h, m)
+			q2.scale(cp.rx, cp.ry).rotate(cp.phi).translate(cp.cx, cp.cy).svg2pdf(h, m)
+			p2.scale(cp.rx, cp.ry).rotate(cp.phi).translate(cp.cx, cp.cy).svg2pdf(h, m)
 			if beta == 0 && !equiv(c.CurPt, p1) {
 				c.MoveTo(p1.X, p1.Y)
 			}
@@ -107,14 +116,8 @@ func angle(u, v vec) float64 {
 	return sign * math.Acos(clamp(dot(u, v)/(mag(u)*mag(v)), -1, 1))
 }
 
-func (p *Point) svgpdf(h float64, m Matrix) *Point {
-	*p = Transform(*p, m)
-	p.Y = h - p.Y
-	return p
-}
-
-// center returns the center parameterization parameters of the elliptic arc described by the arguments. x1 and y1 are the coordinates of the current point.
-func center(a SVGArcParams, h float64, m Matrix) centerParams {
+// center returns the center parameterization parameters of the elliptic arc described a.
+func center(a SVGArcParams) centerParams {
 	const twoPi = 2 * math.Pi
 
 	var out centerParams
