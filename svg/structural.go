@@ -18,7 +18,7 @@ type svg struct {
 
 func (s *svg) AddChild(e element) { s.children = append(s.children, e) }
 
-func (s svg) Category() category                    { return CAT_STRUCTRUAL }
+func (s svg) Category() category                    { return cat_STRUCTURAL }
 func (s svg) Draw(cs *gdf.ContentStream, h float64) {}
 func (s svg) Children() []element                   { return s.children }
 func (s svg) Style() style                          { return s.style }
@@ -54,7 +54,7 @@ type defs struct {
 }
 
 func (d *defs) AddChild(e element)                   { d.children = append(d.children, e) }
-func (d defs) Category() category                    { return CAT_UNDEFINED }
+func (d defs) Category() category                    { return cat_UNDEFINED }
 func (d defs) Draw(cs *gdf.ContentStream, h float64) {}
 func (d defs) Children() []element                   { return d.children }
 func (d defs) Style() style                          { return d.style }
@@ -92,7 +92,7 @@ type group struct {
 
 func (g *group) AddChild(e element) { g.children = append(g.children, e) }
 
-func (g group) Category() category                    { return CAT_STRUCTRUAL }
+func (g group) Category() category                    { return cat_STRUCTURAL }
 func (g group) Draw(cs *gdf.ContentStream, h float64) {}
 func (g group) Children() []element                   { return g.children }
 func (g group) Style() style                          { return g.style }
@@ -130,7 +130,7 @@ type symbol struct {
 
 func (s *symbol) AddChild(e element) { s.children = append(s.children, e) }
 
-func (s symbol) Category() category                    { return CAT_STRUCTRUAL }
+func (s symbol) Category() category                    { return cat_STRUCTURAL }
 func (s symbol) Draw(cs *gdf.ContentStream, h float64) {}
 func (s symbol) Children() []element                   { return s.children }
 func (s symbol) Style() style                          { return s.style }
@@ -170,7 +170,7 @@ type use struct {
 
 func (u *use) AddChild(e element) { u.children = append(u.children, e) }
 
-func (u use) Category() category                    { return CAT_STRUCTRUAL }
+func (u use) Category() category                    { return cat_STRUCTURAL }
 func (u use) Draw(cs *gdf.ContentStream, h float64) {}
 func (u use) Children() []element {
 	var e element
@@ -196,11 +196,30 @@ func (u use) Children() []element {
 		l.style.xOff = pf(u.x)
 		l.style.yOff = pf(u.y)
 		return append(u.children, l)
+	case *path:
+		l := *v
+		l.style.xOff = pf(u.x)
+		l.style.yOff = pf(u.y)
+		return append(u.children, l)
+	case *polygon:
+		l := *v
+		l.style.xOff = pf(u.x)
+		l.style.yOff = pf(u.y)
+		return append(u.children, l)
+	case *polyline:
+		l := *v
+		l.style.xOff = pf(u.x)
+		l.style.yOff = pf(u.y)
+		return append(u.children, l)
+	case *rect:
+		l := *v
+		l.style.xOff = pf(u.x)
+		l.style.yOff = pf(u.y)
+		return append(u.children, l)
+
 	default:
 		return u.children
 	}
-
-	return u.children
 }
 func (u use) Style() style { return u.style }
 func (u use) Inherit(s style) element {

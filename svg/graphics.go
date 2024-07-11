@@ -14,7 +14,7 @@ type circle struct {
 }
 
 func (c circle) AddChild(e element) {}
-func (c circle) Category() category { return CAT_GRAPHICAL }
+func (c circle) Category() category { return cat_GRAPHICAL }
 func (c circle) Draw(cs *gdf.ContentStream, h float64) {
 	// check opacity...
 	if c.fillOpacity.isSet || c.strokeOpacity.isSet {
@@ -48,7 +48,7 @@ func (c circle) Draw(cs *gdf.ContentStream, h float64) {
 	cx, cy = tf(cx+c.xOff, cy+c.yOff, h, c.Matrix)
 	r, _ := strconv.ParseFloat(c.r, 64)
 	cs.Circle(cx, cy, r)
-	Paint(cs, true, c.style)
+	paint(cs, true, c.style)
 }
 func (c circle) Children() []element { return nil }
 func (c circle) Style() style        { return c.style }
@@ -97,7 +97,7 @@ type ellipse struct {
 }
 
 func (el ellipse) AddChild(e element) {}
-func (e ellipse) Category() category  { return CAT_GRAPHICAL }
+func (e ellipse) Category() category  { return cat_GRAPHICAL }
 func (e ellipse) Draw(cs *gdf.ContentStream, h float64) {
 	// check opacity...
 	if e.fillOpacity.isSet || e.strokeOpacity.isSet {
@@ -135,7 +135,7 @@ func (e ellipse) Draw(cs *gdf.ContentStream, h float64) {
 	cx, cy = tf(cx+e.xOff, cy+e.yOff, h, e.Matrix)
 
 	cs.Ellipse(cx, cy, rx, ry)
-	Paint(cs, true, e.style)
+	paint(cs, true, e.style)
 }
 func (e ellipse) Children() []element { return nil }
 func (e ellipse) Style() style        { return e.style }
@@ -186,7 +186,7 @@ type line struct {
 }
 
 func (l line) AddChild(e element) {}
-func (l line) Category() category { return CAT_GRAPHICAL }
+func (l line) Category() category { return cat_GRAPHICAL }
 func (l line) Draw(cs *gdf.ContentStream, h float64) {
 	// check opacity...
 	if l.fillOpacity.isSet || l.strokeOpacity.isSet {
@@ -220,7 +220,7 @@ func (l line) Draw(cs *gdf.ContentStream, h float64) {
 	x2, y2 = tf(x2+l.xOff, y2+l.yOff, h, l.Matrix)
 	cs.MoveTo(x1, y1)
 	cs.LineTo(x2, y2)
-	Paint(cs, false, l.style)
+	paint(cs, false, l.style)
 }
 func (l line) Children() []element { return nil }
 func (l line) Style() style        { return l.style }
@@ -261,7 +261,7 @@ type path struct {
 }
 
 func (p path) AddChild(e element) {}
-func (p path) Category() category { return CAT_GRAPHICAL }
+func (p path) Category() category { return cat_GRAPHICAL }
 func (p path) Draw(cs *gdf.ContentStream, h float64) {
 	// check opacity...
 	if p.fillOpacity.isSet || p.strokeOpacity.isSet {
@@ -336,7 +336,7 @@ type polygon struct {
 }
 
 func (p polygon) AddChild(e element) {}
-func (p polygon) Category() category { return CAT_GRAPHICAL }
+func (p polygon) Category() category { return cat_GRAPHICAL }
 func (p polygon) Draw(cs *gdf.ContentStream, h float64) {
 	// check opacity...
 	if p.fillOpacity.isSet || p.strokeOpacity.isSet {
@@ -385,7 +385,7 @@ func (p polygon) Draw(cs *gdf.ContentStream, h float64) {
 			cs.LineTo(x, y)
 		}
 	}
-	Paint(cs, true, p.style)
+	paint(cs, true, p.style)
 
 }
 func (p polygon) Children() []element { return nil }
@@ -428,7 +428,7 @@ type polyline struct {
 }
 
 func (p polyline) AddChild(e element) {}
-func (p polyline) Category() category { return CAT_GRAPHICAL }
+func (p polyline) Category() category { return cat_GRAPHICAL }
 func (p polyline) Draw(cs *gdf.ContentStream, h float64) {
 	// check opacity...
 	if p.fillOpacity.isSet || p.strokeOpacity.isSet {
@@ -478,7 +478,7 @@ func (p polyline) Draw(cs *gdf.ContentStream, h float64) {
 			cs.LineTo(x, y)
 		}
 	}
-	Paint(cs, false, p.style)
+	paint(cs, false, p.style)
 }
 func (p polyline) Children() []element { return nil }
 func (p polyline) Style() style        { return p.style }
@@ -523,7 +523,7 @@ type rect struct {
 }
 
 func (r rect) AddChild(e element) {}
-func (r rect) Category() category { return CAT_GRAPHICAL }
+func (r rect) Category() category { return cat_GRAPHICAL }
 func (r rect) Draw(cs *gdf.ContentStream, h float64) {
 	// check opacity...
 	if r.fillOpacity.isSet || r.strokeOpacity.isSet {
@@ -563,7 +563,7 @@ func (r rect) Draw(cs *gdf.ContentStream, h float64) {
 	y += height
 	x, y = tf(x+r.xOff, y+r.yOff, h, r.Matrix)
 	cs.Re(x, y, width, height)
-	Paint(cs, false, r.style) // path is already closed
+	paint(cs, false, r.style) // path is already closed
 
 }
 func (r rect) Children() []element { return nil }

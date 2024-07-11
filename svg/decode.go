@@ -37,28 +37,11 @@ func tf(x, y, h float64, m1 gdf.Matrix) (float64, float64) {
 type category uint
 
 const (
-	CAT_SVG = iota
-	CAT_STRUCTRUAL
-	CAT_GRAPHICAL
-	CAT_UNDEFINED
+	cat_SVG = iota
+	cat_STRUCTURAL
+	cat_GRAPHICAL
+	cat_UNDEFINED
 )
-
-type color [3]float64
-
-var (
-	COL_BLACK = color{1, 1, 1}
-	COL_WHITE = color{0, 0, 0}
-	COL_NONE  = color{-1, -1, -1}
-)
-
-type fillRule bool
-
-const (
-	FR_NZ fillRule = false
-	FR_EO fillRule = true
-)
-
-type transform [3][2]float64
 
 type opacity struct {
 	isSet bool
@@ -87,7 +70,7 @@ type element interface {
 	Inherit(style) element // apply parent style
 }
 
-func ParseStyleID(attrs []xml.Attr) (out style, id string) {
+func parseStyleID(attrs []xml.Attr) (out style, id string) {
 	out.Matrix = gdf.NewMatrix()
 	for _, a := range attrs {
 		switch a.Name.Local {
@@ -131,7 +114,7 @@ func ParseStyleID(attrs []xml.Attr) (out style, id string) {
 	return out, id
 }
 
-func Paint(cs *gdf.ContentStream, closePath bool, s style) {
+func paint(cs *gdf.ContentStream, closePath bool, s style) {
 	if closePath {
 		if !s.stroke.isNone && s.stroke.isSet {
 			if s.fill.isNone {
@@ -164,19 +147,21 @@ func Paint(cs *gdf.ContentStream, closePath bool, s style) {
 	}
 }
 
-func Render(root element, cs *gdf.ContentStream, h float64) {
+func render(root element, cs *gdf.ContentStream, h float64) {
 	switch root.Category() {
-	case CAT_STRUCTRUAL:
+	case cat_STRUCTURAL:
 		for _, child := range root.Children() {
 			child = child.Inherit(root.Style())
-			Render(child, cs, h)
+			render(child, cs, h)
 		}
-	case CAT_GRAPHICAL:
+	case cat_GRAPHICAL:
 		root.Draw(cs, h)
 	}
 }
 
-var defmap = make(map[string]element)
+var (
+	defmap = make(map[string]element)
+)
 
 // Decode reads from r, which contains the SVG source data, and returns a gdf.XContent representation of the SVG and an error.
 func Decode(r io.Reader) (gdf.XContent, error) {
@@ -188,7 +173,7 @@ func Decode(r io.Reader) (gdf.XContent, error) {
 	for ; err == nil; tok, err = dec.Token() {
 		switch val := tok.(type) {
 		case xml.StartElement:
-			style, id := ParseStyleID(val.Attr)
+			style, id := parseStyleID(val.Attr)
 			switch val.Name.Local {
 			case "svg":
 				sv := new(svg)
@@ -326,7 +311,7 @@ func Decode(r io.Reader) (gdf.XContent, error) {
 			}
 		}
 	}
-	Render(root.element, &xc.ContentStream, h)
+	render(root.element, &xc.ContentStream, h)
 	xc.BBox = gdf.Rect{0, 0, w, h}
 
 	if err != io.EOF {

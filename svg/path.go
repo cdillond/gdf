@@ -69,7 +69,6 @@ func parsePath(cs *gdf.ContentStream, style style, s string, h float64, m gdf.Ma
 				x += style.xOff
 				y += style.yOff
 			}
-
 			a := gdf.SVGArcParams{
 				X1:          cur.X,
 				Y1:          cur.Y,
@@ -81,12 +80,8 @@ func parsePath(cs *gdf.ContentStream, style style, s string, h float64, m gdf.Ma
 				X2:          x,
 				Y2:          y,
 			}
-
 			cur.X, cur.Y = x, y
 			cs.SVGArc(a, h, m)
-			//cp := center(ep, h, m)
-			//cs.ArcSVG(cp.cx, cp.cy, cp.rx, cp.ry, cp.theta, cp.delta, cp.phi, math.Pi/4., h, m)
-
 		case 'S', 's':
 			x2s, y2s := buf.ConsumeNumber(), buf.ConsumeNumber()
 			x3s, y3s := buf.ConsumeNumber(), buf.ConsumeNumber()
@@ -266,7 +261,7 @@ func parsePath(cs *gdf.ContentStream, style style, s string, h float64, m gdf.Ma
 		}
 		lastOp = op
 	}
-	Paint(cs, false, style)
+	paint(cs, false, style)
 }
 
 // Converts a Quadratic Bezier Curve to a Cubic Bezier Curve.

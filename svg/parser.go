@@ -2,6 +2,7 @@ package svg
 
 import (
 	"strconv"
+	"strings"
 
 	"github.com/cdillond/gdf"
 )
@@ -93,7 +94,7 @@ func (b *buf) ConsumeNumber() string {
 	if c == '.' {
 		b.skip()
 		b.consumeDigit()
-		c, ok = b.peek()
+		c, _ = b.peek()
 	}
 	if c != 'e' && c != 'E' {
 		return string(b.b[start:b.n])
@@ -102,7 +103,7 @@ func (b *buf) ConsumeNumber() string {
 	c, _ = b.peek()
 	if c == '-' || c == '+' {
 		b.skip()
-		c, ok = b.peek()
+		_, ok = b.peek()
 		if !ok {
 			return ""
 		}
@@ -115,12 +116,28 @@ func parseTransform(s string) []gdf.Matrix {
 	var out []gdf.Matrix
 	var buf buf
 	buf.b = []byte(s)
-
 	for buf.n < len(buf.b) {
 		s := string(buf.upTo('('))
 		switch s {
 		case "matrix":
-			// TODO
+			// TODO validate that this is accurate
+			buf.skip()
+			s = string(buf.upTo(')'))
+			s = strings.ReplaceAll(s, ",", " ")
+			nums := strings.Fields(s)
+
+			var snums = [6]float64{}
+			for i := 0; i < len(nums) && i < len(snums); i++ {
+				snums[i] = pf(nums[i])
+			}
+			m := gdf.NewMatrix()
+			m.A = snums[0] // x scale
+			m.B = snums[1] // x shear
+			m.C = snums[2] // y shear
+			m.D = snums[3] // y scale
+			m.E = snums[4] // x offset
+			m.F = snums[5] // y offset
+			out = append(out, m)
 		case "translate":
 			buf.skip()
 			buf.skipWSPComma()
@@ -149,6 +166,8 @@ func parseTransform(s string) []gdf.Matrix {
 			out = append(out, gdf.ScaleBy(scaleX, scaleY))
 		case "rotate":
 			// TODO
+			// by default the rotation is about the origin, but
+			// this may yield odd results given the difference between pdf and svg coordinate spaces.
 		}
 		buf.skip()
 		buf.skipWSPComma()
