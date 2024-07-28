@@ -2,8 +2,6 @@ package gdf
 
 import (
 	"io"
-
-	"github.com/cdillond/gdf/font"
 )
 
 type PDF struct {
@@ -69,17 +67,17 @@ func includeChildren(pdf *PDF, o obj) error {
 			for key := range f.charset {
 				tmp[key] = struct{}{}
 			}
-
-			if f.FontSubsetFunc == nil {
-				f.FontSubsetFunc = font.TTFSubset
-			}
-			b, err := f.FontSubsetFunc(f.SFNT, f.srcb, tmp)
-			if err != nil {
-				return err // log.Println(err.Error())
+			if f.Subsetter == nil {
+				f.source.buf = f.srcb
 			} else {
-				f.source.buf = b
+				f.Subsetter.Init(f.SFNT, f.srcb, f.srcPath)
+				b, err := f.Subsetter.Subset(tmp)
+				if err != nil {
+					return err
+				} else {
+					f.source.buf = b
+				}
 			}
-
 		}
 		includeObj(pdf, child)
 		if err := includeChildren(pdf, child); err != nil {

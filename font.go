@@ -4,26 +4,36 @@ import (
 	"io"
 	"os"
 
+	"github.com/cdillond/gdf/font"
 	"golang.org/x/image/font/sfnt"
 	"golang.org/x/text/encoding"
 	"golang.org/x/text/encoding/charmap"
 )
 
-// A FontSubsetFunc is intended to give the user control over how a Font is subset when it is embedded in the output PDF.
-// By default, gdf uses the TTFSubset function from github.com/cdillond/gdf/font, but there are good reasons to choose a different
-// implementation. For example, Harfbuzz's hb-subset tool and Microsoft's Win32 CreateFontPackage are robust alternatives
-// written in C++ that can be wrapped by a user-defined FontSubsetFunc. If you do not want the embedded font to be subset
-// at all, you can define a function that simply returns src and a nil error. A FontSubsetFunc should not alter the glyph
-// ID of any rune in the cutset. It must also be sure to include a .notdef glyph.
-type FontSubsetFunc func(f *sfnt.Font, src []byte, cutset map[rune]struct{}) ([]byte, error)
+// A FontSubsetter is intended to give the user control over how a Font is subset when it is embedded in the output PDF.
+// By default, gdf uses the DefaultSubsetter, which is equivalent to the BasicSubsetter type from github.com/cdillond/gdf/font,
+// but there are good reasons to choose a different implementation (the gdf/font package provides several).
+// For example, Harfbuzz's hb-subset tool and Microsoft's Win32 CreateFontPackage are robust alternatives written in C++
+// that can be wrapped by a user-defined FontSubsetter.
+// If you do not want the embedded font to be subset at all, you can set the font's FontSubsetter to nil.
+// A FontSubsetter should not alter the glyph ID of any rune in the cutset. It must also be sure to include a .notdef glyph.
+type FontSubsetter interface {
+	Init(SFNT *sfnt.Font, src []byte, path string)
+	Subset(cutset map[rune]struct{}) ([]byte, error)
+}
+
+type DefaultSubsetter struct {
+	font.BasicSubsetter
+}
 
 const ppem = 1000
 
 // A Font represents a TrueType/OpenType font. Any given Font struct should be used on at most 1 PDF. To use the same underlying
 // font on multiple PDF files, derive a new Font struct from the source font file or bytes for each PDF.
 type Font struct {
-	SFNT           *sfnt.Font // The source TrueType or OpenType font.
-	FontSubsetFunc            // If nil, gdf's default is used.
+	SFNT      *sfnt.Font // The source TrueType or OpenType font.
+	Subsetter FontSubsetter
+
 	*simpleFD
 
 	refnum    int
@@ -38,22 +48,22 @@ type Font struct {
 	source    *stream
 	buf       *sfnt.Buffer
 	srcb      []byte
+	srcPath   string
 }
 
 // LoadTrueType returns a *Font object, which can be used for drawing text to a ContentStream or XObject, and an error.
 func LoadTrueType(b []byte, flag FontFlag) (*Font, error) {
-	//b2 := make([]byte, len(b))
-	//copy(b2, b)
 	b2 := b
 	fnt, err := sfnt.Parse(b)
 	if err != nil {
 		return nil, err
 	}
 	out := &Font{
-		subtype: "/TrueType",
-		encName: "/WinAnsiEncoding",
-		charset: make(map[rune]int),
-		enc:     charmap.Windows1252.NewEncoder(),
+		Subsetter: new(DefaultSubsetter),
+		subtype:   "/TrueType",
+		encName:   "/WinAnsiEncoding",
+		charset:   make(map[rune]int),
+		enc:       charmap.Windows1252.NewEncoder(),
 		source: &stream{
 			Filter: Flate,
 		},
@@ -79,7 +89,11 @@ func LoadTrueTypeFile(path string, flag FontFlag) (*Font, error) {
 	if err != nil {
 		return nil, err
 	}
-	return LoadTrueType(b, flag)
+	f, err := LoadTrueType(b, flag)
+	if err != nil {
+		f.srcPath = path
+	}
+	return f, err
 }
 
 type simpleFD struct {
