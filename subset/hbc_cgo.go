@@ -33,7 +33,7 @@ int subset(const unsigned char *src, unsigned int src_len, uint32_t uni_chars[],
         goto destroy_input;
 
     hb_blob_t *sub_blob = hb_face_reference_blob(sub_face);
-    const char *out_data = hb_blob_get_data(sub_blob, &out_len);
+    const char *out_data = hb_blob_get_data_writable(sub_blob, &out_len);
 	memcpy(out, out_data, out_len);
 	hb_blob_destroy(sub_blob);
 destroy_input:
@@ -54,6 +54,33 @@ import (
 // characters included in the cutset. In order for this function to work, CGo must be enabled, HarfBuzz v>=2.9.0 must be installed on
 // your system, and `hbsubsetc` must be passed to the Go compiler as a build tag.
 func HBSubsetC(src []byte, cutset map[rune]struct{}) ([]byte, error) {
+	// convert runes to uint32_t chars readable by hb-subset
+	charset_u32 := make([]uint32, len(cutset))
+	for char := range cutset {
+		charset_u32 = append(charset_u32, uint32(char))
+	}
+	// allocate at least as much as the current file size
+	b := make([]byte, 0, len(src))
+
+	srcData := unsafe.SliceData(src)
+	charsetData := unsafe.SliceData(charset_u32)
+	outData := unsafe.SliceData(b)
+
+	written := int(C.subset(
+		(*C.uchar)(srcData),
+		C.uint(uint(len(src))),
+		(*C.uint)(charsetData),
+		C.int(len(charset_u32)),
+		(*C.uchar)(outData)))
+
+	if written < 1 {
+		return nil, fmt.Errorf("error subsetting font")
+	}
+	b = unsafe.Slice(outData, written)
+	return b, nil
+}
+
+func HBSubsetPathC(path string, cutset map[rune]struct{}) ([]byte, error) {
 	// convert runes to uint32_t chars readable by hb-subset
 	charset_u32 := make([]uint32, len(cutset))
 	for char := range cutset {
