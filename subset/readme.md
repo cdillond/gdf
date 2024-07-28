@@ -1,0 +1,4 @@
+*About*
+Package subset provides functions for subsetting SFNT type fonts. It also provides implementations of the `FontSubsetter` interface defined in the `github.com/cdillond/gdf` package. However, it may be used independently of that package.
+
+The `TTFSubset` function is written entirely in Go, but it may not work with all TrueType/OpenType fonts, including variable fonts and fonts that use CFF outlines. To overcome these limitations, this package also includes functions that depend on [HarfBuzz](https://harfbuzz.github.io/). The `HBSubset` and `HBSubsetPath` functions invoke the [hb-subset](https://harfbuzz.github.io/utilities.html#utilities-command-line-hbsubset) tool via `os/exec`. The `HBSubsetC` function, which *must* be built using the build tag `hbsubsetc`, uses CGo to call functions in `libharfbuzz` and `libharfbuzz-subset` versions 2.9.0 and later.

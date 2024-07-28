@@ -4,7 +4,7 @@ import (
 	"io"
 	"os"
 
-	"github.com/cdillond/gdf/font"
+	"github.com/cdillond/gdf/subset"
 	"golang.org/x/image/font/sfnt"
 	"golang.org/x/text/encoding"
 	"golang.org/x/text/encoding/charmap"
@@ -23,12 +23,12 @@ type FontSubsetter interface {
 }
 
 type DefaultSubsetter struct {
-	font.BasicSubsetter
+	subset.BasicSubsetter
 }
 
 const ppem = 1000
 
-// A Font represents a TrueType/OpenType font. Any given Font struct should be used on at most 1 PDF. To use the same underlying
+// A Font represents an SFNT font. Any given Font struct should be used on at most 1 PDF. To use the same underlying
 // font on multiple PDF files, derive a new Font struct from the source font file or bytes for each PDF.
 type Font struct {
 	SFNT      *sfnt.Font // The source TrueType or OpenType font.
@@ -51,8 +51,8 @@ type Font struct {
 	srcPath   string
 }
 
-// LoadTrueType returns a *Font object, which can be used for drawing text to a ContentStream or XObject, and an error.
-func LoadTrueType(b []byte, flag FontFlag) (*Font, error) {
+// LoadSFNT returns a *Font object, which can be used for drawing text to a ContentStream or XObject, and an error.
+func LoadSFNT(b []byte, flag FontFlag) (*Font, error) {
 	b2 := b
 	fnt, err := sfnt.Parse(b)
 	if err != nil {
@@ -83,13 +83,13 @@ func LoadTrueType(b []byte, flag FontFlag) (*Font, error) {
 	return out, nil
 }
 
-// LoadTrueTypeFile returns a *Font object, which can be used for drawing text to a ContentStream or XObject, and an error.
-func LoadTrueTypeFile(path string, flag FontFlag) (*Font, error) {
+// LoadSFNTFile returns a *Font object, which can be used for drawing text to a ContentStream or XObject, and an error.
+func LoadSFNTFile(path string, flag FontFlag) (*Font, error) {
 	b, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}
-	f, err := LoadTrueType(b, flag)
+	f, err := LoadSFNT(b, flag)
 	if err != nil {
 		f.srcPath = path
 	}
