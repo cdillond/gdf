@@ -2,6 +2,7 @@ fnt/*
 content/*
 old/*
 *.json
+svg/*.txt
 .vscode/*
 */*/test/*
 */test/*

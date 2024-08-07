@@ -77,7 +77,7 @@ func (b *buf) ConsumeNumber() string {
 	}
 	if c == '-' || c == '+' {
 		b.skip()
-		c, ok = b.peek()
+		_, ok = b.peek()
 		if !ok {
 			return ""
 		}

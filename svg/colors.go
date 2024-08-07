@@ -72,7 +72,7 @@ func parseColor(s string) (c cl, o opacity) {
 
 func parseRGBFunc(s string) (c cl, o opacity) {
 	s = s[4:]
-	s = strings.Trim(s, "()\x20\n\r\t\v\f\x85\xA0")
+	s = strings.Trim(s, "()\u0020\n\r\t\v\f\u0085\u00A0")
 
 	n := strings.IndexByte(s, '/')
 	if n > 0 && n < len(s)-1 {
