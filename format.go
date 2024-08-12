@@ -20,7 +20,7 @@ func abs(i int) int {
 func date(t time.Time) []byte {
 	dst := make([]byte, len("(D:YYYYMMDDHHmmSSOHH'mm)"))
 	n := copy(dst, []byte("(D:"))
-	dst = itobuf(t.Year(), dst[n:])
+	dst = itobuf(t.Year(), dst[n:n])
 	n += 4
 
 	// to be used for 0-padded digits
