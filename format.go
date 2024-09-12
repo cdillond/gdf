@@ -20,36 +20,30 @@ func abs(i int) int {
 func date(t time.Time) []byte {
 	dst := make([]byte, len("(D:YYYYMMDDHHmmSSOHH'mm)"))
 	n := copy(dst, []byte("(D:"))
-	dst = itobuf(t.Year(), dst[n:n])
+	itobuf(t.Year(), dst[n:n])
 	n += 4
 
 	// to be used for 0-padded digits
-	two := [2]byte{'0', '0'}
+	four := [4]byte{'0', '0'}
+	two := four[:2]
 
-	buf := itobuf(int64(t.Month()), two[:])
-	n += copy(dst[n:], buf[len(buf)-2:])
-
-	buf = itobuf(int64(t.Day()), two[:])
-	n += copy(dst[n:], buf[len(buf)-2:])
-
-	buf = itobuf(int64(t.Hour()), two[:])
-	n += copy(dst[n:], buf[len(buf)-2:])
-
-	buf = itobuf(int64(t.Minute()), two[:])
-	n += copy(dst[n:], buf[len(buf)-2:])
-
-	buf = itobuf(int64(t.Second()), two[:])
-	n += copy(dst[n:], buf[len(buf)-2:])
+	pad := func(i int64) int {
+		buf := strconv.AppendInt(two, i, 10)
+		return copy(dst[n:], buf[len(buf)-2:]) // should always be 2
+	}
+	n += pad(int64(t.Month()))
+	n += pad(int64(t.Day()))
+	n += pad(int64(t.Hour()))
+	n += pad(int64(t.Minute()))
+	n += pad(int64(t.Second()))
 
 	_, offset := t.Zone()
-
-	if offset < 0 {
+	switch {
+	case offset < 0:
 		dst[n] = '-'
-
-	} else if offset == 0 {
+	case offset == 0:
 		dst[n] = 'Z'
-
-	} else {
+	default:
 		dst[n] = '+'
 	}
 	n++
@@ -59,12 +53,10 @@ func date(t time.Time) []byte {
 	offset -= hours * 60 * 60
 	minutes := offset / 60
 
-	buf = itobuf(hours, two[:])
-	n += copy(dst[n:], buf[len(buf)-2:])
+	n += pad(int64(hours))
 	dst[n] = '\''
 	n++
-	buf = itobuf(minutes, two[:])
-	n += copy(dst[n:], buf[len(buf)-2:])
+	n += pad(int64(minutes))
 	dst[n] = ')'
 	return dst
 

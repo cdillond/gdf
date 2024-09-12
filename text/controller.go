@@ -113,6 +113,28 @@ to the formatting directives contained in FormatText:
 */
 type FormatText []rune
 
+func cmpColor(a, b gdf.Color) bool {
+	switch v := a.(type) {
+	case gdf.RGBColor:
+		if rb, ok := b.(gdf.RGBColor); ok {
+			return v == rb
+		}
+	case gdf.CMYKColor:
+		if rb, ok := b.(gdf.CMYKColor); ok {
+			return v == rb
+		}
+	case gdf.GColor:
+		if rb, ok := b.(gdf.GColor); ok {
+			return v == rb
+		}
+	case nil:
+		if b == nil {
+			return true
+		}
+	}
+	return false
+}
+
 // NewController returns a Controller that is ready to write src to ContentStreams. It returns an invalid Controller
 // and an error if it encounters a problem while parsing and shaping src. lineWidth should be the maximum desired
 // width, in points, of each line of the output text when drawn to a gdf.ContentStream.
@@ -183,7 +205,9 @@ func NewController(src FormatText, lineWidth float64, f FontFamily, cfg Controll
 // the position of c's TextCursor after the text has been drawn. (This value would not be otherwise accessible because
 // each call to DrawText encompasses a c.BeginText/EndText pair.) The returned bool indicates whether the Controller's
 // buffer still contains additional source text. If this value is true, then future calls to DrawText can be used to
-// draw the remaining source text - usually to different areas or ContentStreams.
+// draw the remaining source text - usually to different areas or ContentStreams. Changes made to c's
+// stroking color, nonstroking color, or render mode by the Controller will continue to affect operations on c
+// after DrawText returns, unless they are manually reverted.
 func (tc *Controller) DrawText(c *gdf.ContentStream, area gdf.Rect) (gdf.Point, bool, error) {
 	if gdf.PtToFU(area.Width(), tc.fontSize) < tc.lineWidth {
 		return *new(gdf.Point), false, ErrWidth
@@ -204,10 +228,10 @@ func (tc *Controller) DrawText(c *gdf.ContentStream, area gdf.Rect) (gdf.Point, 
 	if c.Font != tc.curFont || c.FontSize != tc.fontSize {
 		c.SetFont(tc.fontSize, tc.curFont)
 	}
-	if c.NColor != tc.ncolor && tc.ncolor != nil {
+	if !cmpColor(c.NColor, tc.ncolor) && tc.ncolor != nil {
 		c.SetColor(tc.ncolor)
 	}
-	if c.SColor != tc.scolor && tc.scolor != nil {
+	if !cmpColor(c.SColor, tc.scolor) && tc.scolor != nil {
 		c.SetColorStroke(tc.scolor)
 	}
 	et, err := c.BeginText()
