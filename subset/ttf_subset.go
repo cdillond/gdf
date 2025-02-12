@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/go-text/typesetting/opentype/loader"
-	"github.com/go-text/typesetting/opentype/tables"
+	loader "github.com/go-text/typesetting/font/opentype"
+	"github.com/go-text/typesetting/font/opentype/tables"
 	"golang.org/x/image/font/sfnt"
 )
 
@@ -127,7 +127,7 @@ func TTFSubset(f *sfnt.Font, src []byte, cutset map[rune]struct{}) ([]byte, erro
 	glyphs = append(glyphs, composites...)
 	sort.Slice(glyphs, func(i, j int) bool { return glyphs[i] < glyphs[j] })
 
-	// loop back over the loca table and zero out the locations of unused glyphs
+	// loop back over the loca table and zero out the outlines of unused glyphs
 	var finalOffset uint32
 	var final uint32
 	for i := 0; i < len(loca); i++ {
