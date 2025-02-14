@@ -26,6 +26,19 @@ func NewRect(ll, ur Point) Rect {
 	}
 }
 
+// Columns returns a slice of numCols Rects of equal width that subdivide r.
+func (r Rect) Columns(numCols int) []Rect {
+	ret := make([]Rect, numCols)
+	colWidth := r.Width() / float64(numCols)
+	llx := r.LLX
+	for i := range ret {
+		r.LLX = llx + float64(i)*colWidth
+		r.URX = r.LLX + colWidth
+		ret[i] = r
+	}
+	return ret
+}
+
 func (r Rect) String() string {
 	return "[" + ftoa(r.LLX) + "\x20" + ftoa(r.LLY) + "\x20" + ftoa(r.URX) + "\x20" + ftoa(r.URY) + "]"
 }

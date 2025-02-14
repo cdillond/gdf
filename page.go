@@ -96,6 +96,10 @@ func NewPage(pageSize Rect, margins Margins) Page {
 	return p
 }
 
+// Surface returns the rect corresponding to the area of the Page that falls within the Page's margins.
+// This may be convenient to use when drawing text to the Page.
+func (p Page) Surface() Rect { return p.MediaBox.Bounds(p.Margins) }
+
 // Appends page to p.
 func (p *PDF) AppendPage(page *Page) {
 	p.catalog.pages.P = append(p.catalog.pages.P, page)

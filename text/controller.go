@@ -24,6 +24,7 @@ var (
 // A Controller is a struct that aids in writing text to a ContentStream. The Controller can break text into lines and paragraphs,
 // determine the appropriate kerning for glyphs in a string, and draw text according to the format specified by the ControllerCfg struct.
 type Controller struct {
+	IsDone         bool
 	src            []rune        // source text
 	family         FontFamily    // the set of fonts to be used. On each call to DrawText, the supplied ContentStream's font will be set to one of the fonts from f, according to the TextConroller's font weight state. The fonts need not be of the same actual family - chosen families are valid, too!
 	isBold, isItal bool          // font weight state
@@ -210,7 +211,12 @@ func NewController(src FormatText, lineWidth float64, f FontFamily, cfg Controll
 // after DrawText returns, unless they are manually reverted.
 func (tc *Controller) DrawText(c *gdf.ContentStream, area gdf.Rect) (gdf.Point, bool, error) {
 	if gdf.PtToFU(area.Width(), tc.fontSize) < tc.lineWidth {
-		return *new(gdf.Point), false, ErrWidth
+		// very slight differences due to floating point precision errors should be ok
+		const epsilon = 1e-8
+		if tc.lineWidth-gdf.PtToFU(area.Width(), tc.fontSize) > epsilon {
+			return *new(gdf.Point), false, ErrWidth
+		}
+
 	}
 	if tc.n >= len(tc.tokens) {
 		return *new(gdf.Point), false, ErrEmpty
@@ -248,6 +254,7 @@ func (tc *Controller) DrawText(c *gdf.ContentStream, area gdf.Rect) (gdf.Point, 
 	if err != nil {
 		return *new(gdf.Point), false, err
 	}
+	tc.IsDone = tc.n == len(tc.tokens)-1
 	return endPt, tc.n == len(tc.tokens)-1, nil
 }
 
