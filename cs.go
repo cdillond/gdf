@@ -1,13 +1,7 @@
 package gdf
 
 import (
-	"fmt"
 	"io"
-)
-
-var (
-	ErrNested = fmt.Errorf("text objects cannot be statically nested")
-	ErrClosed = fmt.Errorf("text object is already closed")
 )
 
 type ContentStream struct {
@@ -29,6 +23,17 @@ const (
 
 // An EndText function return by c.BeginText() must be invoked to close a section of text written to c.
 type EndText func() error
+
+type TextObjErr string
+
+func (t TextObjErr) Error() string {
+	return string(t)
+}
+
+const (
+	ErrNested = TextObjErr("text objects cannot be statically nested")
+	ErrClosed = TextObjErr("text object is already closed")
+)
 
 // BeginText declares a new text object within the ContentStream. It must be called before drawing
 // any text to c. It returns an EndText function, which must be called to close the text object, and
@@ -64,6 +69,7 @@ func (c *ContentStream) id() int    { return c.refnum }
 func (c *ContentStream) children() []obj {
 	return c.stream.children()
 }
+
 func (c *ContentStream) encode(w io.Writer) (int, error) {
 	return c.stream.encode(w)
 }

@@ -9,16 +9,24 @@ import (
 	"github.com/cdillond/gdf"
 )
 
-var (
+type ControllerErr string
+
+func (c ControllerErr) Error() string { return string(c) }
+
+type DrawErr string
+
+func (d DrawErr) Error() string { return string(d) }
+
+const (
 	// errors returned by NewController
-	ErrTolerance = fmt.Errorf("unable to break lines using current tolerances")
-	ErrWordSize  = fmt.Errorf("source text contains an unbreakable word that is longer than the maximum line length")
+	ErrTolerance = ControllerErr("unable to break lines using current tolerances")
+	ErrWordSize  = ControllerErr("source text contains an unbreakable word that is longer than the maximum line length")
 
 	// errors returned by DrawText
-	ErrWidth   = fmt.Errorf("target area must be at least as wide as the maximum line width")
-	ErrEmpty   = fmt.Errorf("source text buffer is empty")
-	ErrLeading = fmt.Errorf("font leading must be greater than 0")
-	ErrHeight  = fmt.Errorf("target area must be at least as tall as the font leading")
+	ErrWidth   = DrawErr("target area must be at least as wide as the maximum line width")
+	ErrEmpty   = DrawErr("source text buffer is empty")
+	ErrLeading = DrawErr("font leading must be greater than 0")
+	ErrHeight  = DrawErr("target area must be at least as tall as the font leading")
 )
 
 // A Controller is a struct that aids in writing text to a ContentStream. The Controller can break text into lines and paragraphs,
@@ -111,6 +119,8 @@ to the formatting directives contained in FormatText:
  3. rune(-3) toggles bold text on and off.
  4. rune(-4) toggles italic text on and off.
     The bold and italic indicators can be used to switch among fonts in a given font family.
+
+NOTE: the formatting directives are not valid UTF-8 and cannot be embedded in strings.
 */
 type FormatText []rune
 
@@ -479,7 +489,7 @@ func (tc *Controller) breakLines(squishTolerance, stretchTolerance float64) (bre
 
 	breakIndices := []int{}
 	lineLengths := []float64{}
-	//adjs := []float64{}
+	//  adjs := []float64{}
 	activeNodes := []node{{
 		tIndex:    0,
 		pWidth:    0,
@@ -627,8 +637,7 @@ func (tc *Controller) writeLines(c *gdf.ContentStream, numLines int) {
 	i := tc.n
 	for ; i < len(tc.tokens) && lineCount < len(tc.breakpoints); i++ {
 		if _, ok := breaks[i]; ok {
-			var dif float64
-			var alignAdj float64
+			var dif, alignAdj float64
 			if tc.adjs[lineCount] == 0 && (tc.alignment == Center || tc.alignment == Right) && len(run) != 0 {
 				dif = tc.lineWidth - tc.lineWidths[lineCount]
 				switch tc.alignment {
@@ -672,8 +681,7 @@ func (tc *Controller) writeLines(c *gdf.ContentStream, numLines int) {
 			kerns = append(kerns, v.kerns...)
 		case fWeight:
 			if len(run) != 0 {
-				var dif float64
-				var alignAdj float64
+				var dif, alignAdj float64
 				if tc.adjs[lineCount] == 0 && (tc.alignment == Center || tc.alignment == Right) && len(run) != 0 {
 					dif = tc.lineWidth - tc.lineWidths[lineCount]
 					switch tc.alignment {
@@ -710,8 +718,7 @@ func (tc *Controller) writeLines(c *gdf.ContentStream, numLines int) {
 			}
 		case ncChange:
 			if len(run) != 0 {
-				var dif float64
-				var alignAdj float64
+				var dif, alignAdj float64
 				if tc.adjs[lineCount] == 0 && (tc.alignment == Center || tc.alignment == Right) && len(run) != 0 {
 					dif = tc.lineWidth - tc.lineWidths[lineCount]
 					switch tc.alignment {
