@@ -45,12 +45,12 @@ func writeXref(p *PDF, w io.Writer) error {
 	p.xref = append(p.xref, p.n) // adding the offset even though it won't be included yet
 	t, err := w.Write([]byte("xref\n" +
 		"0\x20" + itoa(len(p.xref)) + "\n" +
-		"0000000000\x2065536\x20f\n\r"))
+		"0000000000\x2065536\x20f\r\n"))
 	p.n += t
 	if err != nil {
 		return err
 	}
-	b := []byte("0000000000\x2000000\x20n\n\r")
+	b := []byte("0000000000\x2000000\x20n\r\n")
 	for i := 0; i < len(p.xref)-1; i++ {
 		pad10(p.xref[i], b)
 		t, err := w.Write(b)
