@@ -8,3 +8,5 @@ svg/*.txt
 */test/*
 test/*
 svg2/*
+.kateproject
+*.kate-swp
